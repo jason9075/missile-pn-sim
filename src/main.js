@@ -32,8 +32,11 @@ const environment = new Environment(scene);
 const cameraManager = new CameraManager(camera, renderer.domElement);
 
 const missilePhysics = new Missile({ initialPosition: new THREE.Vector3(0.7, 31.9, -0.45), speed: 400 });
-const targetPhysics = new Target({ initialPosition: new THREE.Vector3(2400, 650, -1400), speed: 180, pattern: 'straight' });
+const targetPhysics = new Target({ pattern: 'coastal-crossing' });
 const pnController = new PNController({ N: 4.0, maxAccelG: 30.0 });
+
+missilePhysics.setAimTarget(targetPhysics.position);
+environment.setLauncherAim(targetPhysics.position);
 
 const missileModel = new MissileModel(scene);
 const targetModel = new TargetModel(scene);
@@ -62,7 +65,9 @@ const controls = new Controls({
   },
   onReset: () => {
     missilePhysics.reset(new THREE.Vector3(0.7, 31.9, -0.45));
-    targetPhysics.reset(new THREE.Vector3(2400, 650, -1400));
+    targetPhysics.reset();
+    missilePhysics.setAimTarget(targetPhysics.position);
+    environment.setLauncherAim(targetPhysics.position);
     missileModel.explosionTriggered = false;
     cameraManager.resetOrbit();
     isPaused = false;
@@ -81,6 +86,15 @@ const controls = new Controls({
   },
   onTargetPatternChange: (pattern) => {
     targetPhysics.setPattern(pattern);
+    if (!missilePhysics.isLaunched) {
+      targetPhysics.reset();
+      missilePhysics.reset(new THREE.Vector3(0.7, 31.9, -0.45));
+      missilePhysics.setAimTarget(targetPhysics.position);
+      environment.setLauncherAim(targetPhysics.position);
+      const overlays = controls.getOverlayConfig();
+      missileModel.update(missilePhysics, overlays, 0);
+      targetModel.update(targetPhysics, overlays, 0);
+    }
   }
 });
 

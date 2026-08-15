@@ -57,6 +57,23 @@ export class Missile {
     this.updateOrientation();
   }
 
+  setAimTarget(targetPos) {
+    if (!targetPos || this.isLaunched) return;
+    const dx = targetPos.x - this.position.x;
+    const dz = targetPos.z - this.position.z;
+    const launchAzimuth = Math.atan2(dx, -dz);
+    const launchPitch = Math.PI / 4;
+
+    const launchDir = new THREE.Vector3(
+      Math.sin(launchAzimuth) * Math.cos(launchPitch),
+      Math.sin(launchPitch),
+      -Math.cos(launchAzimuth) * Math.cos(launchPitch)
+    ).normalize();
+
+    this.velocity.copy(launchDir).multiplyScalar(this.speed);
+    this.updateOrientation();
+  }
+
   launch() {
     this.isLaunched = true;
   }

@@ -17,7 +17,7 @@ export class Controls {
     this.btnCloseSidebar = document.getElementById('btn-close-sidebar');
     this.sidebarPanel = document.getElementById('sidebar-panel');
 
-    // Controls
+    // Controls in Simulation Settings
     this.navGainInput = document.getElementById('nav-gain');
     this.valNavGain = document.getElementById('val-nav-gain');
 
@@ -57,6 +57,16 @@ export class Controls {
       this.btnPause.textContent = '⏸ Pause';
     });
 
+    // Target Trajectory change in Simulation Settings panel
+    if (this.targetPatternSelect) {
+      this.targetPatternSelect.addEventListener('change', (e) => {
+        const pattern = e.target.value;
+        if (this.callbacks.onTargetPatternChange) {
+          this.callbacks.onTargetPatternChange(pattern);
+        }
+      });
+    }
+
     this.cameraSelect.addEventListener('change', (e) => {
       const mode = e.target.value;
       if (this.cameraHint) {
@@ -90,10 +100,6 @@ export class Controls {
       const val = parseFloat(e.target.value);
       this.valTargetSpeed.textContent = val;
       if (this.callbacks.onTargetSpeedChange) this.callbacks.onTargetSpeedChange(val);
-    });
-
-    this.targetPatternSelect.addEventListener('change', (e) => {
-      if (this.callbacks.onTargetPatternChange) this.callbacks.onTargetPatternChange(e.target.value);
     });
   }
 

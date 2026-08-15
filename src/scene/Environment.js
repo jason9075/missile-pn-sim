@@ -146,6 +146,14 @@ export class Environment {
     this.scene.add(this.launcherGroup);
   }
 
+  setLauncherAim(targetPos) {
+    if (!targetPos || !this.turretGroup) return;
+    const dx = targetPos.x - 0;
+    const dz = targetPos.z - 0;
+    const launchAzimuth = Math.atan2(dx, -dz);
+    this.turretGroup.rotation.y = -launchAzimuth;
+  }
+
   update(delta) {
     if (this.water) {
       this.water.update(delta);

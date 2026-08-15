@@ -12,7 +12,7 @@ export class MathModal {
     this.modal = document.getElementById('math-modal');
     this.content = document.getElementById('math-content');
 
-    this.language = 'en'; // 'en' or 'zhTW'
+    this.language = 'zhTW'; // Default to Traditional Chinese
 
     this.modalCopy = {
       en: `
@@ -35,7 +35,21 @@ export class MathModal {
         <p>$$\\mathbf{a}_c = N \\cdot V_c \\cdot (\\boldsymbol{\\omega}_{los} \\times \\mathbf{u}_m)$$</p>
         <p>where $N$ is the Navigation Gain Constant (typically $3.0 \\sim 5.0$).</p>
 
-        <h3>4. Implementation Algorithm (JavaScript)</h3>
+        <h3>4. Interception Geometry: Lateral Crossing vs. Head-on</h3>
+        <p>The simulation offers two distinct operational flight corridors:</p>
+
+        <ul>
+          <li>
+            <strong>1. Coastline Crossing (Lateral / Flank Interception):</strong>
+            <p>The target cruises straight along the coastline ($+Z \\to -Z$), presenting a high initial Line-of-Sight rotation rate $\\dot{\\lambda}$. Proportional Navigation generates a lateral lead acceleration to establish a collision course, creating a classical curved pursuit trajectory that intercepts the target from the flank.</p>
+          </li>
+          <li>
+            <strong>2. Direct Inbound (Head-on / Frontal Interception):</strong>
+            <p>The target approaches head-on across the strait toward the base. High closing velocity $V_c = \\|\\mathbf{v}_m\\| + \\|\\mathbf{v}_t\\| \\approx 580\\text{ m/s}$ requires minimal lateral correction and results in a rapid frontal engagement.</p>
+          </li>
+        </ul>
+
+        <h3>5. Implementation Algorithm (JavaScript)</h3>
         <pre><code class="language-js">function calculatePN(r_m, v_m, r_t, v_t, N) {
   const los = new THREE.Vector3().subVectors(r_t, r_m);
   const R = los.length();
@@ -74,7 +88,21 @@ export class MathModal {
         <p>$$\\mathbf{a}_c = N \\cdot V_c \\cdot (\\boldsymbol{\\omega}_{los} \\times \\mathbf{u}_m)$$</p>
         <p>其中 $N$ 為導引常數（Navigation Constant / Gain），典型值設定為 $3.0 \\sim 5.0$。物理上受最大 G 值飽和限制 $a_{\\max}$。</p>
 
-        <h3>4. 核心演算法實現 (JavaScript)</h3>
+        <h3>4. 攔截幾何分析：側向攔截 vs. 迎頭正面攔截</h3>
+        <p>系統提供兩條經典戰術航線供對比比例導引特性：</p>
+
+        <ul>
+          <li>
+            <strong>1. 沿海岸線飛行（Coastline Crossing - 側向攔截）：</strong>
+            <p>目標沿著海岸線南北向筆直巡航（$+Z \\to -Z$），與陣地形成大角度側向橫越。此時視線角速率（$\\dot{\\lambda}$）極大，比例導引將產生大幅度側向過載指令以建立前置攔截角（Lead Angle），呈現壯觀的側向弧形截擊軌跡。</p>
+          </li>
+          <li>
+            <strong>2. 海峽正面進襲（Direct Inbound - 迎頭正面攔截）：</strong>
+            <p>目標從外海朝向海岸基地直飛進襲。此時相對閉合速度高達 $V_c \\approx 580\\text{ m/s}$，視線旋轉率低，飛彈以高迎頭速度迅速完成中段與終端攔截。</p>
+          </li>
+        </ul>
+
+        <h3>5. 核心演算法實現 (JavaScript)</h3>
         <pre><code class="language-js">function calculatePN(r_m, v_m, r_t, v_t, N) {
   const los = new THREE.Vector3().subVectors(r_t, r_m);
   const R = los.length();
