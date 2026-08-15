@@ -91,12 +91,15 @@ const controls = new Controls({
       missilePhysics.reset(new THREE.Vector3(0.7, 31.9, -0.45));
       missilePhysics.setAimTarget(targetPhysics.position);
       environment.setLauncherAim(targetPhysics.position);
-      const overlays = controls.getOverlayConfig();
-      missileModel.update(missilePhysics, overlays, 0);
+      const overlays = (typeof controls !== 'undefined' && controls) ? controls.getOverlayConfig() : { showLOS: true, showAccel: false, showVel: false, showTrails: true };
+      missileModel.update(missilePhysics, overlays, 0, cameraManager.mode);
       targetModel.update(targetPhysics, overlays, 0);
     }
   }
 });
+
+// Load saved settings (camera mode, speeds, trajectories, overlays)
+controls.loadSettings();
 
 /* ─── Resize Handler ──────────────────────────────────────────────── */
 window.addEventListener('resize', () => {

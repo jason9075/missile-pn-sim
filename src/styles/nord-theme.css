@@ -305,6 +305,31 @@ canvas {
   color: var(--nord6);
 }
 
+/* God's View (Ground Truth) Item Styling */
+.hud-item.gods-view .hud-label {
+  color: #EBCB8B;
+  opacity: 0.95;
+}
+
+.hud-item.gods-view .hud-value {
+  color: #EBCB8B;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(235, 203, 139, 0.35);
+}
+
+.hud-tag-god {
+  display: inline-block;
+  font-size: 0.58rem;
+  padding: 0.05rem 0.28rem;
+  margin-left: 0.25rem;
+  border-radius: 3px;
+  background: rgba(235, 203, 139, 0.2);
+  color: #EBCB8B;
+  border: 1px solid rgba(235, 203, 139, 0.4);
+  font-weight: 700;
+  vertical-align: middle;
+}
+
 /* Math Modal */
 #math-modal[hidden] {
   display: none;
@@ -330,6 +355,8 @@ canvas {
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   padding: 1.5rem;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-header {
@@ -345,6 +372,8 @@ canvas {
 .modal-header h2 {
   font-size: 1.1rem;
   color: var(--nord8);
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-actions {
@@ -362,6 +391,8 @@ canvas {
   font-size: 0.82rem;
   cursor: pointer;
   transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .modal-toggle:hover {
@@ -377,6 +408,13 @@ canvas {
   line-height: 1.7;
   color: var(--nord5);
   font-size: 0.9rem;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.modal-body * {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-body pre[class*="language-"] {
@@ -385,6 +423,13 @@ canvas {
   font-size: 0.82rem;
   margin: 0.5rem 0;
   padding: 1rem;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#math-modal ::selection {
+  background: var(--nord8);
+  color: var(--nord0);
 }
 
 /* Camera Controls Hint Badge */
