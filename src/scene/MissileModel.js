@@ -31,14 +31,6 @@ export class MissileModel {
     const nose = new THREE.Mesh(noseGeo, noseMat);
     this.meshGroup.add(nose);
 
-    // Seeker Head Glass Tip
-    const seekerGeo = new THREE.SphereGeometry(0.35, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    seekerGeo.rotateX(-Math.PI / 2);
-    seekerGeo.translate(0, 0, -5);
-    const seekerMat = new THREE.MeshPhysicalMaterial({ color: 0xEBCB8B, roughness: 0.1, transmission: 0.8, opacity: 1, transparent: true });
-    const seeker = new THREE.Mesh(seekerGeo, seekerMat);
-    this.meshGroup.add(seeker);
-
     // Tail Fins (4 fins)
     const finShape = new THREE.Shape();
     finShape.moveTo(0, 0);
@@ -123,6 +115,9 @@ export class MissileModel {
       linewidth: 2
     });
     this.losLine = new THREE.Line(losGeo, losMat);
+
+    this.accelArrow.visible = false;
+    this.velArrow.visible = false;
 
     this.vectorGroup.add(this.accelArrow);
     this.vectorGroup.add(this.velArrow);

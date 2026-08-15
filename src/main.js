@@ -31,8 +31,8 @@ const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerH
 const environment = new Environment(scene);
 const cameraManager = new CameraManager(camera, renderer.domElement);
 
-const missilePhysics = new Missile({ initialPosition: new THREE.Vector3(0, 34, 0), speed: 400 });
-const targetPhysics = new Target({ initialPosition: new THREE.Vector3(1200, 500, -800), speed: 180, pattern: 'straight' });
+const missilePhysics = new Missile({ initialPosition: new THREE.Vector3(0.7, 31.9, -0.45), speed: 400 });
+const targetPhysics = new Target({ initialPosition: new THREE.Vector3(2400, 650, -1400), speed: 180, pattern: 'straight' });
 const pnController = new PNController({ N: 4.0, maxAccelG: 30.0 });
 
 const missileModel = new MissileModel(scene);
@@ -61,8 +61,9 @@ const controls = new Controls({
     stepRequested = true;
   },
   onReset: () => {
-    missilePhysics.reset(new THREE.Vector3(0, 34, 0));
-    targetPhysics.reset(new THREE.Vector3(1200, 500, -800));
+    missilePhysics.reset(new THREE.Vector3(0.7, 31.9, -0.45));
+    targetPhysics.reset(new THREE.Vector3(2400, 650, -1400));
+    missileModel.explosionTriggered = false;
     cameraManager.resetOrbit();
     isPaused = false;
   },
@@ -80,7 +81,6 @@ const controls = new Controls({
   },
   onTargetPatternChange: (pattern) => {
     targetPhysics.setPattern(pattern);
-    targetPhysics.reset();
   }
 });
 
@@ -95,7 +95,7 @@ window.addEventListener('resize', () => {
 
 /* ─── Physics Simulation Step ─────────────────────────────────────── */
 function simulateStep(dt) {
-  // 1. Update Target Position & Velocity
+  // 1. Update Target Position & Velocity (if not intercepted)
   targetPhysics.update(dt);
 
   // 2. Calculate PN Guidance Law Command
@@ -109,10 +109,13 @@ function simulateStep(dt) {
   // 3. Update Missile Physics
   missilePhysics.update(dt, telemetry.appliedAccel, targetPhysics.position);
 
-  // Trigger explosion visual effect on hit
-  if (missilePhysics.isHit && !missileModel.explosionTriggered) {
-    missileModel.triggerExplosion(targetPhysics.position);
-    missileModel.explosionTriggered = true;
+  // Trigger explosion & target destruction on hit
+  if (missilePhysics.isHit) {
+    targetPhysics.isHit = true;
+    if (!missileModel.explosionTriggered) {
+      missileModel.triggerExplosion(targetPhysics.position);
+      missileModel.explosionTriggered = true;
+    }
   }
 
   // Return calculation for UI & visualization update
@@ -148,7 +151,7 @@ function animate(now) {
   const overlays = controls.getOverlayConfig();
   environment.update(delta);
   missileModel.update(missilePhysics, targetPhysics, overlays);
-  targetModel.update(targetPhysics, overlays);
+  targetModel.update(targetPhysics, overlays, delta);
   missileModel.updateExplosion(delta);
 
   // Update camera perspective

@@ -35,8 +35,16 @@ export class Missile {
       this.initialPosition.copy(initialPos);
     }
     this.position.copy(this.initialPosition);
-    // Initial launch pitch angled up towards target area
-    this.velocity.set(100, 300, -300).normalize().multiplyScalar(this.speed);
+    // Initial launch pitch and azimuth perfectly aligned with launcher turret (58 deg azimuth, 45 deg elevation)
+    const launchAzimuth = 1.012; // rad (58 deg)
+    const launchPitch = Math.PI / 4; // 45 deg
+    const launchDir = new THREE.Vector3(
+      Math.sin(launchAzimuth) * Math.cos(launchPitch),
+      Math.sin(launchPitch),
+      -Math.cos(launchAzimuth) * Math.cos(launchPitch)
+    ).normalize();
+
+    this.velocity.copy(launchDir).multiplyScalar(this.speed);
     
     this.isLaunched = false;
     this.isHit = false;

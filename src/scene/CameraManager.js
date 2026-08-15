@@ -12,7 +12,7 @@ export class CameraManager {
     this.boostMultiplier = 2.5;
     this.lookSpeed = 0.0024; // radians per pixel
     
-    // Euler angles for camera rotation ('YXZ' prevents gimbal roll)
+    // Euler angles for free camera rotation ('YXZ' prevents gimbal roll)
     this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
     
     // Movement key states
@@ -34,6 +34,20 @@ export class CameraManager {
     this.isDragging = false;
     this.prevPointerPos = { x: 0, y: 0 };
 
+    // Chase Mode Orbit Controls (Azimuth, Elevation, Distance)
+    this.chaseOrbit = {
+      azimuth: 0,          // 0 = directly behind missile
+      elevation: 0.32,     // ~18.3 degrees elevated above flight path
+      distance: 40.0       // 40m orbit radius
+    };
+
+    // Target Mode Orbit Controls
+    this.targetOrbit = {
+      azimuth: 0.45,
+      elevation: 0.28,
+      distance: 35.0
+    };
+
     this.bindEvents();
     this.resetCamera();
   }
@@ -45,6 +59,14 @@ export class CameraManager {
     this.euler.setFromQuaternion(this.camera.quaternion, 'YXZ');
     this.velocity.set(0, 0, 0);
     this.targetVelocity.set(0, 0, 0);
+
+    this.chaseOrbit.azimuth = 0;
+    this.chaseOrbit.elevation = 0.32;
+    this.chaseOrbit.distance = 40.0;
+
+    this.targetOrbit.azimuth = 0.45;
+    this.targetOrbit.elevation = 0.28;
+    this.targetOrbit.distance = 35.0;
   }
 
   // Alias for backward compatibility
@@ -166,30 +188,51 @@ export class CameraManager {
   }
 
   onPointerDown(event) {
-    if (this.mode !== 'free') return;
     this.isDragging = true;
     this.prevPointerPos = { x: event.clientX, y: event.clientY };
-    this.euler.setFromQuaternion(this.camera.quaternion, 'YXZ');
+
+    if (this.mode === 'free') {
+      this.euler.setFromQuaternion(this.camera.quaternion, 'YXZ');
+    }
   }
 
   onPointerMove(event) {
-    if (!this.isDragging || this.mode !== 'free') return;
+    if (!this.isDragging) return;
 
     const dx = event.clientX - this.prevPointerPos.x;
     const dy = event.clientY - this.prevPointerPos.y;
     this.prevPointerPos = { x: event.clientX, y: event.clientY };
 
-    // Yaw (left / right rotation around world Y axis)
-    this.euler.y -= dx * this.lookSpeed;
-    
-    // Pitch (up / down rotation around local X axis)
-    this.euler.x -= dy * this.lookSpeed;
+    if (this.mode === 'free') {
+      // Yaw (left / right rotation around world Y axis)
+      this.euler.y -= dx * this.lookSpeed;
+      
+      // Pitch (up / down rotation around local X axis)
+      this.euler.x -= dy * this.lookSpeed;
 
-    // Clamp pitch angle to avoid camera flipping at zenith/nadir
-    const maxPitch = Math.PI * 0.485; // ~87.3 degrees
-    this.euler.x = Math.max(-maxPitch, Math.min(maxPitch, this.euler.x));
+      // Clamp pitch angle to avoid camera flipping at zenith/nadir
+      const maxPitch = Math.PI * 0.485; // ~87.3 degrees
+      this.euler.x = Math.max(-maxPitch, Math.min(maxPitch, this.euler.x));
 
-    this.camera.quaternion.setFromEuler(this.euler);
+      this.camera.quaternion.setFromEuler(this.euler);
+    } else if (this.mode === 'missile-chase') {
+      // 360 Orbit rotation around missile in flight
+      this.chaseOrbit.azimuth += dx * 0.0055;
+      this.chaseOrbit.elevation += dy * 0.0055;
+
+      // Clamp elevation angle (-40 to +82 degrees)
+      const minEl = -Math.PI * 0.22;
+      const maxEl = Math.PI * 0.45;
+      this.chaseOrbit.elevation = Math.max(minEl, Math.min(maxEl, this.chaseOrbit.elevation));
+    } else if (this.mode === 'target') {
+      // Orbit rotation around target drone
+      this.targetOrbit.azimuth += dx * 0.0055;
+      this.targetOrbit.elevation += dy * 0.0055;
+
+      const minEl = -Math.PI * 0.22;
+      const maxEl = Math.PI * 0.45;
+      this.targetOrbit.elevation = Math.max(minEl, Math.min(maxEl, this.targetOrbit.elevation));
+    }
   }
 
   onPointerUp() {
@@ -197,16 +240,25 @@ export class CameraManager {
   }
 
   onWheel(event) {
-    if (this.mode !== 'free') return;
     event.preventDefault();
 
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
-    const zoomStep = -Math.sign(event.deltaY) * 35;
-    this.camera.position.addScaledVector(forward, zoomStep);
+    if (this.mode === 'free') {
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+      const zoomStep = -Math.sign(event.deltaY) * 35;
+      this.camera.position.addScaledVector(forward, zoomStep);
 
-    // Prevent moving below ground level (y >= 1m)
-    if (this.camera.position.y < 1.0) {
-      this.camera.position.y = 1.0;
+      // Prevent moving below ground level (y >= 1m)
+      if (this.camera.position.y < 1.0) {
+        this.camera.position.y = 1.0;
+      }
+    } else if (this.mode === 'missile-chase') {
+      // Zoom orbit distance around missile
+      this.chaseOrbit.distance += Math.sign(event.deltaY) * 4.0;
+      this.chaseOrbit.distance = Math.max(10.0, Math.min(220.0, this.chaseOrbit.distance));
+    } else if (this.mode === 'target') {
+      // Zoom orbit distance around target
+      this.targetOrbit.distance += Math.sign(event.deltaY) * 3.5;
+      this.targetOrbit.distance = Math.max(8.0, Math.min(180.0, this.targetOrbit.distance));
     }
   }
 
@@ -262,23 +314,57 @@ export class CameraManager {
       this.camera.position.copy(camPos);
       this.camera.lookAt(lookTarget);
     } else if (this.mode === 'missile-chase') {
-      // Chase camera positioned 30m behind and 8m above missile
-      const velDir = missilePhysics.velocity.clone().normalize();
-      const chaseOffset = velDir.clone().multiplyScalar(-30).add(new THREE.Vector3(0, 8, 0));
-      
-      const camPos = missilePhysics.position.clone().add(chaseOffset);
-      const lookTarget = missilePhysics.position.clone().addScaledVector(velDir, 200);
+      // Orbiting chase camera around missile in flight
+      const forwardDir = missilePhysics.velocity.lengthSq() > 1e-3 
+        ? missilePhysics.velocity.clone().normalize() 
+        : new THREE.Vector3(0, 0, -1).applyQuaternion(missilePhysics.orientation);
 
-      this.camera.position.lerp(camPos, 0.2);
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      const rightDir = forwardDir.clone().cross(worldUp).normalize();
+      // Ensure orthonormal up vector
+      const orthoUp = rightDir.clone().cross(forwardDir).normalize();
+
+      const cosEl = Math.cos(this.chaseOrbit.elevation);
+      const sinEl = Math.sin(this.chaseOrbit.elevation);
+      const cosAz = Math.cos(this.chaseOrbit.azimuth);
+      const sinAz = Math.sin(this.chaseOrbit.azimuth);
+
+      // Relative orbit offset from missile position
+      const offset = new THREE.Vector3()
+        .addScaledVector(forwardDir, -cosAz * cosEl * this.chaseOrbit.distance)
+        .addScaledVector(rightDir, sinAz * cosEl * this.chaseOrbit.distance)
+        .addScaledVector(orthoUp, sinEl * this.chaseOrbit.distance);
+
+      const targetCamPos = missilePhysics.position.clone().add(offset);
+      const lookTarget = missilePhysics.position.clone();
+
+      this.camera.position.lerp(targetCamPos, 0.28);
       this.camera.lookAt(lookTarget);
     } else if (this.mode === 'target') {
-      // Focused on target looking towards approaching missile
-      const targetPos = targetPhysics.position;
-      const camOffset = new THREE.Vector3(15, 10, 25);
-      const camPos = targetPos.clone().add(camOffset);
+      // Orbiting chase camera around target drone
+      const forwardDir = targetPhysics.velocity.lengthSq() > 1e-3 
+        ? targetPhysics.velocity.clone().normalize() 
+        : new THREE.Vector3(0, 0, -1);
 
-      this.camera.position.copy(camPos);
-      this.camera.lookAt(missilePhysics.position);
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      const rightDir = forwardDir.clone().cross(worldUp).normalize();
+      const orthoUp = rightDir.clone().cross(forwardDir).normalize();
+
+      const cosEl = Math.cos(this.targetOrbit.elevation);
+      const sinEl = Math.sin(this.targetOrbit.elevation);
+      const cosAz = Math.cos(this.targetOrbit.azimuth);
+      const sinAz = Math.sin(this.targetOrbit.azimuth);
+
+      const offset = new THREE.Vector3()
+        .addScaledVector(forwardDir, -cosAz * cosEl * this.targetOrbit.distance)
+        .addScaledVector(rightDir, sinAz * cosEl * this.targetOrbit.distance)
+        .addScaledVector(orthoUp, sinEl * this.targetOrbit.distance);
+
+      const targetCamPos = targetPhysics.position.clone().add(offset);
+      const lookTarget = targetPhysics.position.clone();
+
+      this.camera.position.lerp(targetCamPos, 0.28);
+      this.camera.lookAt(lookTarget);
     }
   }
 }
