@@ -1,0 +1,20 @@
+# Nix
+result
+result-*
+.direnv/
+
+# Node
+node_modules/
+dist/
+
+# Neovim
+*.swp
+*.swo
+.netrwhist
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agents
+.codex

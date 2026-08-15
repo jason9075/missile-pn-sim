@@ -1,0 +1,181 @@
+# Guidelines: Proportional Navigation (PN) Missile Simulation & Visualization
+
+本指南規範基於 Three.js 與 Vite 開發的「比例導引（Proportional Navigation, PN）飛彈模擬互動網頁」之設計需求、數學模型、視角控制、遙測數據與軟體架構。
+
+---
+
+## 1. 專案目標 (Project Overview)
+
+建構一個具備高視覺質感、物理嚴謹性與教學互動性的 3D 導引模擬器，用以展示防空飛彈使用**比例導引律（Proportional Navigation Guidance, PN）**追擊無人機（Drone）的物理原理與向量幾何關係。
+
+使用者可：
+- 設定無人機飛行路徑與導引增益數值 $N$。
+- 按下發射（Launch）觀看飛彈自防空飛彈台起飛並追擊目標。
+- 自由切換視角：戰術全景、飛彈第一人稱（尋標器視角）、飛彈第三人稱（追逐視角）、目標視角。
+- 在發射後隨時暫停（Pause），並透過**單幀步進（Step Once）**按鈕逐幀觀察飛彈狀態與 PN 導引指令變化。
+- 讀取即時遙測面板（Telemetry Panel），觀測視線角速率、相對速度、趨近速度與導向加速度加速度指令（$a_c$）。
+- 開啟數學原理彈窗（Math Modal 💡），對照 KaTeX 數學公式與程式碼實現。
+
+---
+
+## 2. 核心數學與物理模型 (Mathematical & Physical Models)
+
+### 2.1 比例導引律 (Proportional Navigation Law)
+
+PN 的核心原理為：**飛彈的加速度指令方向垂直於飛彈速度向量（或視線向量），其大小與視線旋轉角速率（LOS Rate, $\dot{\lambda}$）及趨近速度（Closing Velocity, $V_c$）成正比。**
+
+#### (1) 關鍵物理量定義
+- **飛彈位置與速度**：$\mathbf{r}_m, \mathbf{v}_m$
+- **目標位置與速度**：$\mathbf{r}_t, \mathbf{v}_t$
+- **視線向量 (Line-of-Sight Vector, LOS)**：
+  $$\mathbf{r} = \mathbf{r}_t - \mathbf{r}_m, \quad R = \|\mathbf{r}\|$$
+- **視線單位向量**：
+  $$\mathbf{u}_{\text{los}} = \frac{\mathbf{r}}{R}$$
+- **相對速度向量**：
+  $$\mathbf{v}_r = \mathbf{v}_t - \mathbf{v}_m$$
+- **趨近速度 (Closing Velocity)**：
+  $$V_c = -\dot{R} = -\frac{\mathbf{r} \cdot \mathbf{v}_r}{R}$$
+- **視線角速度向量 (LOS Rate Vector)**：
+  $$\boldsymbol{\omega}_{\text{los}} = \frac{\mathbf{r} \times \mathbf{v}_r}{R^2}$$
+
+#### (2) 加速度指令計算 (Acceleration Command)
+在 3D 空間中，True Proportional Navigation (TPN) 之加速度指令 $\mathbf{a}_c$ 為：
+$$\mathbf{a}_c = N \cdot V_c \cdot (\boldsymbol{\omega}_{\text{los}} \times \mathbf{u}_m)$$
+其中：
+- $N$：導引常數（Navigation Constant / Gain），典型值介於 $3.0 \sim 5.0$。
+- $\mathbf{u}_m = \mathbf{v}_m / \|\mathbf{v}_m\|$：飛彈速度方向之單位向量。
+- 飛彈受物理極限限制，最大橫向加速度被飽和限制為 $a_{\max}$（如 $30G$）。
+
+---
+
+### 2.2 飛彈與目標動力學 (Kinematics & Dynamics)
+
+1. **防空飛彈 (Missile)**：
+   - 初始靜止於防空飛彈台（Air Defense Launcher Platform）。
+   - 發射後進入升空與主動導引階段，速度 magnitude $V_m$ 可設定為常數或含推力加速階段。
+   - 姿態 (Attitude/Heading) 隨速度向量 $\mathbf{v}_m$ 自動對齊旋轉，尾部帶有尾焰與煙霧粒子軌跡（Smoke Trail）。
+2. **無人機目標 (Target Drone)**：
+   - 支持多種飛行模式：
+     - **直線飛行 (Straight)**：等速直線飛行。
+     - **蛇行/正弦運動 (Sinusoidal Evasive)**：週期性橫向擺動規避。
+     - **高 G 轉彎 (High-G Maneuver)**：半徑固定的圓弧/迴旋爬升運動。
+
+---
+
+## 3. 視角與相機系統 (Camera System & Perspectives)
+
+網頁需提供 4 種可即時切換的視角模式：
+
+| 視角名稱 | 英文標示 | 說明 |
+| :--- | :--- | :--- |
+| **自由相機** | Free Camera (WASD / QE) | 自由移動/升降/旋轉 (WASD 移動、QE 垂直升降、滑鼠拖曳轉向、Shift 加速)，俯瞰整體防空陣地與導引軌跡 |
+| **飛彈第一人稱** | Missile 1st Person (POV) | 相機位於飛彈頭部尋標器位置，視線朝向飛彈前端/目標，帶來極強代入感 |
+| **飛彈第三人稱** | Missile 3rd Person (Chase) | 追跡相機，位於飛彈後上方跟隨飛行，視線對齊飛彈前進方向 |
+| **無人機視角** | Target Lock View | 相機聚焦於無人機目標，觀察飛彈從遠處逼近 |
+
+---
+
+## 4. 使用者介面與控制面板 (User Interface & Controls)
+
+ UI 採用現代深色質感（Nord Color Palette），包含以下主要區域：
+
+### 4.1 頂部工具列 (Top Control Bar)
+- **Launch (發射)**：觸發飛彈發射。
+- **Pause / Resume (暫停 / 繼續)**：凍結/恢復模擬。
+- **Step Once (單幀步進)**：當處於 Pause 狀態時，執行單一物理幀更新（$\Delta t \approx 1/60\text{s}$），方便精確觀察微觀數據與向量變化。
+- **Reset (重置)**：將飛彈重置至防空飛彈台，清除軌跡。
+- **Camera Selection (視角選擇下拉選單)**：`Free Camera (WASD / QE)` / `Missile 1st Person` / `Missile 3rd Person` / `Target View`。
+- **Math Modal Open (💡)**：開啟數學原理解說視窗。
+
+### 4.2 參數設定側欄/選單 (Simulation Parameters)
+- **Navigation Constant ($N$)**：滑桿，範圍 $2.0 \sim 6.0$，預設 $4.0$。
+- **Missile Speed ($V_m$)**：滑桿，設定飛彈極速。
+- **Drone Speed ($V_t$)**：滑桿，設定目標速度。
+- **Target Trajectory Pattern**：選單（`Straight Line`, `Sinusoidal Maneuver`, `Circular Turn`）。
+- **Vector Overlay Toggles**：開關控制是否顯示 LOS 視線、飛彈加速度向量箭頭、目標相對速度箭頭。
+
+### 4.3 遙測數據面板 (Telemetry Panel / HUD)
+位於畫面一角（如左下角或右上角），即時顯示以下導引數據：
+
+#### 飛彈與目標狀態 (State Data)
+- **Flight Time ($T$)**：飛行時間 (s)
+- **Range ($R$)**：飛彈與目標距離 (m)
+- **Closing Velocity ($V_c$)**：趨近速度 (m/s)
+- **Missile Speed ($V_m$)** & **Altitude ($H_m$)**
+- **Target Speed ($V_t$)** & **Altitude ($H_t$)**
+
+#### PN 導引指令數據 (PN Guidance Telemetry)
+- **LOS Azimuth ($\lambda_{\text{az}}$)** & **LOS Elevation ($\lambda_{\text{el}}$)**：視線方位角與俯仰角
+- **LOS Rate ($\|\boldsymbol{\omega}_{\text{los}}\||$)**：視線角速率 ($\text{rad/s}$)
+- **Cmd Acceleration ($a_c$)**：Calculated PN acceleration command ($\text{m/s}^2$ 與 $G$ 值)
+- **Applied Acceleration ($a_m$)**：Saturated physical acceleration applied ($\text{m/s}^2$)
+
+---
+
+## 5. 數學原理彈窗 (Math Modal & KaTeX)
+
+符合 `gfx-lab` 規範之 💡 數學彈窗：
+- 右上角包含 `Eng/中` 雙語切換與 `Close` 按鈕。
+- 使用 KaTeX 渲染比例導引公式（如 LOS 向量導出、趨近速度 $V_c = -\dot{R}$、PN 加速度指令 $\mathbf{a}_c = N V_c \boldsymbol{\omega} \times \mathbf{u}_m$）。
+- 附帶 Prism.js 程式碼高亮，呈現實際 JavaScript 向量運算 logic code。
+
+---
+
+## 6. 技術架構與專案目錄規範 (Technical Architecture)
+
+本專案建置於 NixOS + Vite + Three.js 環境下，資料夾與檔案模組規劃如下：
+
+```text
+├── flake.nix                  # NixOS 開發環境設定
+├── Justfile                   # just install / dev / build 指令
+├── package.json               # dependencies: three, katex, prismjs, prism-themes
+├── vite.config.js             # Vite 建構設定
+├── index.html                 # 應用程式入口與 UI 結構
+├── src/
+│   ├── main.js                # 主程式入口、Three.js 渲染循環與事件監聽
+│   ├── physics/
+│   │   ├── VectorMath.js      # 向量加減、外積、投影等幾何計算輔助
+│   │   ├── PNController.js    # 比例導引律（PN Guidance Law）核心算法
+│   │   ├── Missile.js         # 飛彈物理狀態、位置/速度/姿態更新與軌跡記錄
+│   │   └── Target.js          # 無人機運動軌跡產生器 (Straight, Sine, Turn)
+│   ├── scene/
+│   │   ├── Environment.js     # 海峽天空盒 (HDR)、光照與場景管理
+│   │   ├── Terrain.js         # 海岸地形、海峽群島與防空陣地基座生成
+│   │   ├── Water.js           # 動態海浪 Shader、Fresnel 反射與海峽水面
+│   │   ├── MissileModel.js    # 飛彈 3D 模型與尾氣/粒子軌跡
+│   │   ├── TargetModel.js     # 無人機 3D 模型
+│   │   └── CameraManager.js   # 4 種視角切換 (Free Camera WASD/QE 等) 與平滑追蹤邏輯
+│   ├── ui/
+│   │   ├── TelemetryPanel.js  # 遙測數據面板更新邏輯
+│   │   ├── Controls.js        # 工具列、按鈕、StepOnce 邏輯處理
+│   │   └── MathModal.js       # KaTeX 公式渲染與中英語言切換
+│   └── styles/
+│       └── nord-theme.css     # Nord 風格 CSS 樣式
+└── guidelines                 # 本規範文件
+```
+
+---
+
+## 7. 開發與部署流程 (Workflow & Commands)
+
+1. **安裝環境與相依性**：
+   ```bash
+   just install
+   ```
+2. **啟動本地開發伺服器**：
+   ```bash
+   just dev
+   ```
+   瀏覽器開啟 `http://localhost:8080` 進行測試。
+3. **編譯打包 Production 版本**：
+   ```bash
+   just build
+   ```
+
+---
+
+## 8. 設計細節與 UX 要求 (Design & User Experience Requirements)
+
+1. **視覺吸引力**：防空飛彈台應包含發射架細節，飛彈發射時須有粒子尾焰（Thruster Particle System）與軌跡線（Ribbon / Trail Mesh）。
+2. **向量視覺化 (Vector Debug Helpers)**：可開啟/關閉顯示黃色視線虛線 (LOS Line)、紅色導引加速度向量 ($\mathbf{a}_c$)、藍色飛彈速度向量 ($\mathbf{v}_m$)。
+3. **無縫 steponce 體驗**：點擊 Pause 後，Step Once 每按一次推動時間步長 $\Delta t = 1/60$ 秒，遙測數據面板即時精確更新該 frame 的數值，方便核對導引運算。

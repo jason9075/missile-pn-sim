@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proportional Navigation (PN) Missile Simulation</title>
+  <script type="module" src="/src/main.js"></script>
+</head>
+<body>
+
+
+  <!-- Top Toolbar -->
+  <div id="toolbar" aria-label="Tool controls">
+    <button id="btn-launch" class="btn btn-primary" type="button">🚀 Launch</button>
+    <button id="btn-pause" class="btn" type="button">⏸ Pause</button>
+    <button id="btn-step" class="btn" type="button" title="Advance by 1 frame (1/60s)">⏭ Step Once</button>
+    <button id="btn-reset" class="btn" type="button">🔄 Reset</button>
+    <div class="toolbar-divider"></div>
+    <label for="camera-select">Camera</label>
+    <select id="camera-select">
+      <option value="free">Free Camera (WASD / QE)</option>
+      <option value="missile-pov">Missile 1st Person (POV)</option>
+      <option value="missile-chase">Missile 3rd Person (Chase)</option>
+      <option value="target">Target View</option>
+    </select>
+    <button id="btn-open-sidebar" class="btn icon-button" type="button" title="Simulation Settings">⚙️</button>
+    <button id="open-math" class="btn icon-button" type="button" aria-haspopup="dialog" aria-controls="math-modal" aria-label="Explain the math">💡</button>
+  </div>
+
+  <!-- Simulation Parameters Sidebar Panel -->
+  <div id="sidebar-panel" class="glass-panel">
+    <div class="panel-header">
+      <h3>Simulation Settings</h3>
+      <button id="btn-close-sidebar" class="panel-close-btn" type="button">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="control-group">
+        <label for="nav-gain">Navigation Constant (N): <span id="val-nav-gain">4.0</span></label>
+        <input type="range" id="nav-gain" min="2.0" max="6.0" step="0.1" value="4.0" />
+      </div>
+      <div class="control-group">
+        <label for="missile-speed">Missile Speed (m/s): <span id="val-missile-speed">400</span></label>
+        <input type="range" id="missile-speed" min="150" max="800" step="10" value="400" />
+      </div>
+      <div class="control-group">
+        <label for="target-speed">Target Speed (m/s): <span id="val-target-speed">180</span></label>
+        <input type="range" id="target-speed" min="50" max="400" step="10" value="180" />
+      </div>
+      <div class="control-group">
+        <label for="target-pattern">Target Trajectory</label>
+        <select id="target-pattern">
+          <option value="straight">Straight Line</option>
+          <option value="sinusoidal">Sinusoidal Evasive</option>
+          <option value="circular">High-G Circular Turn</option>
+        </select>
+      </div>
+      <hr class="panel-divider" />
+      <div class="control-group">
+        <span class="control-group-title">Visual Overlays</span>
+        <label class="checkbox-label">
+          <input type="checkbox" id="toggle-los" checked />
+          <span>Line of Sight (LOS) Vector</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="toggle-accel" checked />
+          <span>Missile Accel Command (a<sub>c</sub>)</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="toggle-vel" checked />
+          <span>Velocity Vectors (v<sub>m</sub>, v<sub>t</sub>)</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="toggle-trails" checked />
+          <span>Trajectory Ribbon Trails</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telemetry HUD Panel -->
+  <div id="telemetry-panel" class="glass-panel">
+    <div class="hud-header">
+      <span class="hud-title">REALTIME TELEMETRY</span>
+      <span id="hud-status" class="hud-badge status-standby">STANDBY</span>
+    </div>
+    <div class="hud-grid">
+      <div class="hud-item">
+        <span class="hud-label">Flight Time (T)</span>
+        <span id="tel-time" class="hud-value">0.00 s</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Distance (R)</span>
+        <span id="tel-range" class="hud-value">0 m</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Closing Vel (V<sub>c</sub>)</span>
+        <span id="tel-vc" class="hud-value">0 m/s</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Missile Speed / Alt</span>
+        <span id="tel-missile-state" class="hud-value">0 m/s | 0 m</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Target Speed / Alt</span>
+        <span id="tel-target-state" class="hud-value">0 m/s | 0 m</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">LOS Azimuth / Elev</span>
+        <span id="tel-los-angles" class="hud-value">0.0° | 0.0°</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">LOS Rate (|ω<sub>los</sub>|)</span>
+        <span id="tel-los-rate" class="hud-value">0.0000 rad/s</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Cmd Accel (a<sub>c</sub>)</span>
+        <span id="tel-cmd-accel" class="hud-value">0.0 m/s² (0.0 G)</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Applied Accel (a<sub>m</sub>)</span>
+        <span id="tel-applied-accel" class="hud-value">0.0 m/s²</span>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- Camera Controls Hint Overlay -->
+  <div id="camera-hint" class="camera-hint">
+    <span class="hint-badge">Free Camera</span>
+    <span class="hint-text"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;•&nbsp; <kbd>Q</kbd><kbd>E</kbd> Down/Up &nbsp;•&nbsp; <kbd>Drag</kbd> Look &nbsp;•&nbsp; <kbd>Shift</kbd> Fast</span>
+  </div>
+
+  <!-- Math Modal -->
+  <div id="math-modal" role="dialog" aria-modal="true" aria-labelledby="math-title" hidden>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="math-title">Math Behind Proportional Navigation (PN)</h2>
+        <div class="modal-actions">
+          <button id="language-toggle" class="modal-toggle" type="button">Eng/中</button>
+          <button id="close-math" class="modal-toggle" type="button" aria-label="Close">Close</button>
+        </div>
+      </div>
+      <div id="math-content" class="modal-body"></div>
+    </div>
+  </div>
+
+</body>
+</html>
