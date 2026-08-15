@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RibbonTrail } from './RibbonTrail.js';
 
 export class TargetModel {
   constructor(scene) {
@@ -58,12 +59,13 @@ export class TargetModel {
     this.hitMaterial = new THREE.MeshStandardMaterial({
       color: 0xBF616A, // Tactical Red (#BF616A)
       emissive: 0x5c0e18, // Internal thermal red glow
-      emissiveIntensity: 0.6,
+      emissiveIntensity: 0.85,
       roughness: 0.15,
       metalness: 0.2,
       transparent: true,
-      opacity: 0.52,
-      depthWrite: false,
+      opacity: 0.65,
+      depthTest: true,
+      depthWrite: true,
       side: THREE.DoubleSide,
     });
   }
@@ -283,10 +285,11 @@ export class TargetModel {
     this.isHitVisual = isHit;
 
     if (isHit) {
-      // Switch all meshes to red transparent hit material
+      // Switch all meshes to red transparent hit material & renderOrder 5 (above water)
       this.meshGroup.traverse((child) => {
         if (child.isMesh && child !== this.blurDisc) {
           child.material = this.hitMaterial;
+          child.renderOrder = 5;
         }
       });
       if (this.blurDisc) {
@@ -297,6 +300,7 @@ export class TargetModel {
       this.meshGroup.traverse((child) => {
         if (child.isMesh && child.userData.originalMaterial) {
           child.material = child.userData.originalMaterial;
+          child.renderOrder = 0;
         }
       });
       if (this.blurDisc) {
@@ -306,20 +310,8 @@ export class TargetModel {
   }
 
   initTrail() {
-    const maxPoints = 500;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(maxPoints * 3);
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-    const material = new THREE.LineBasicMaterial({
-      color: 0x81A1C1,
-      linewidth: 2,
-      transparent: true,
-      opacity: 0.7
-    });
-
-    this.trailLine = new THREE.Line(geometry, material);
-    this.scene.add(this.trailLine);
+    // 3D Crimson Red ribbon trail for hostile target (width 2.2m)
+    this.ribbonTrail = new RibbonTrail(this.scene, 0xFF3B56, 2.2, 700);
   }
 
   initVector() {
@@ -360,17 +352,8 @@ export class TargetModel {
     }
 
     // 4. Trail
-    if (overlaysConfig && overlaysConfig.showTrails) {
-      this.trailLine.visible = true;
-      const posAttr = this.trailLine.geometry.attributes.position;
-      const trail = targetPhysics.trail;
-      for (let i = 0; i < trail.length; i++) {
-        posAttr.setXYZ(i, trail[i].x, trail[i].y, trail[i].z);
-      }
-      this.trailLine.geometry.setDrawRange(0, trail.length);
-      posAttr.needsUpdate = true;
-    } else {
-      this.trailLine.visible = false;
+    if (this.ribbonTrail) {
+      this.ribbonTrail.update(targetPhysics.trail, overlaysConfig && overlaysConfig.showTrails);
     }
 
     // 5. Velocity Overlay Arrow

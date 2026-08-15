@@ -164,7 +164,8 @@ function animate(now) {
   // Update 3D visual models, environment, and overlays
   const overlays = controls.getOverlayConfig();
   environment.update(delta);
-  missileModel.update(missilePhysics, targetPhysics, overlays);
+  missileModel.update(missilePhysics, overlays, delta);
+  missileModel.updateLOS(missilePhysics.position, targetPhysics.position, overlays.showLOS);
   targetModel.update(targetPhysics, overlays, delta);
   missileModel.updateExplosion(delta);
 

@@ -125,6 +125,7 @@ export class Water {
     });
 
     this.mesh = new THREE.Mesh(geometry, this.material);
+    this.mesh.renderOrder = 1; // Render water background before overlays and ribbon trails
     // Position over the sea/strait eastward from the coastline
     this.mesh.position.set(1600, 0.0, 0);
   }

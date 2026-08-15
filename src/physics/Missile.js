@@ -4,7 +4,7 @@ export class Missile {
   constructor(options = {}) {
     this.initialPosition = options.initialPosition || new THREE.Vector3(0, 10, 0);
     this.speed = options.speed !== undefined ? options.speed : 400; // m/s
-    this.killRadius = options.killRadius !== undefined ? options.killRadius : 15.0; // 15 meters intercept radius
+    this.killRadius = options.killRadius !== undefined ? options.killRadius : 12.0; // 12.0m realistic proximity fuze lethal radius
 
     this.position = this.initialPosition.clone();
     this.velocity = new THREE.Vector3(0, 300, -200).normalize().multiplyScalar(this.speed);
@@ -104,27 +104,41 @@ export class Missile {
     }
     this.velocity.copy(newVel);
 
-    // Update position
-    this.position.addScaledVector(this.velocity, dt);
-    this.updateOrientation();
+    // Continuous Collision Detection (CCD) for exact physical Hit-to-Kill impact
+    const pPrev = this.position.clone();
+    const pNext = pPrev.clone().addScaledVector(this.velocity, dt);
+    const seg = pNext.clone().sub(pPrev);
+    const segLenSq = seg.lengthSq();
 
-    // Check distance to target
-    const currentDist = this.position.distanceTo(targetPos);
-    if (currentDist < this.closestDistance) {
-      this.closestDistance = currentDist;
+    let tFraction = 1.0;
+    if (segLenSq > 1e-6) {
+      tFraction = Math.max(0, Math.min(1, targetPos.clone().sub(pPrev).dot(seg) / segLenSq));
+    }
+    const closestPoint = pPrev.clone().addScaledVector(seg, tFraction);
+    const minCenterDist = closestPoint.distanceTo(targetPos);
+
+    if (minCenterDist < this.closestDistance) {
+      this.closestDistance = minCenterDist;
     }
 
-    // Intercept hit check
-    if (currentDist <= this.killRadius) {
+    // Direct Physical Impact (Hit-to-Kill) check: physical mesh overlap (<= 3.5m)
+    if (minCenterDist <= this.killRadius) {
+      // Place missile right at the contact impact point
+      this.position.copy(closestPoint);
+      this.updateOrientation();
       this.isHit = true;
-    } 
-    // Miss check: if distance starts increasing after getting close (passed target) and beyond kill radius
-    else if (this.flightTime > 1.5 && currentDist > this.closestDistance + 20 && currentDist > this.killRadius) {
-      this.isMissed = true;
-    }
-    // Ground collision or extreme flight time check
-    else if (this.position.y < 0 || this.flightTime > 30.0) {
-      this.isMissed = true;
+    } else {
+      this.position.copy(pNext);
+      this.updateOrientation();
+
+      // Miss check: if missile passed closest point of approach and distance is expanding
+      if (this.flightTime > 1.0 && pNext.distanceTo(targetPos) > this.closestDistance + 8.0 && this.closestDistance > this.killRadius) {
+        this.isMissed = true;
+      }
+      // Ground collision or extreme flight time check
+      else if (this.position.y < 0 || this.flightTime > 30.0) {
+        this.isMissed = true;
+      }
     }
 
     // Record trail point

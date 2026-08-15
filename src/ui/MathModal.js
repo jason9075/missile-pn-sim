@@ -49,7 +49,24 @@ export class MathModal {
           </li>
         </ul>
 
-        <h3>5. Implementation Algorithm (JavaScript)</h3>
+        <h3>5. Terminal Interception Mechanics: Proximity Fuze vs. Hit-to-Kill</h3>
+        <p>In real-world air defense engineering, missiles rarely require a physical direct collision to eliminate threats:</p>
+        
+        <ul>
+          <li>
+            <strong>1. Proximity Fuze & Blast-Fragmentation Warheads (近炸引信破片殺傷):</strong>
+            <p>Air defense missiles (e.g., AIM-9X, AIM-120, Patriot PAC-2, Iron Dome Tamir) employ active optical laser or RF radar proximity fuzes. When the missile reaches the optimal kill sphere ($5 \\sim 15\\text{ m}$ from the target), the fuze detonates the warhead, releasing thousands of high-velocity tungsten fragments ($2,000 \\sim 3,000\\text{ m/s}$) and intense shockwaves to shred the airframe, fuel tanks, and propulsion.</p>
+            <p>The kill probability is governed by fragment spatial density:</p>
+            <p>$$P_k = 1 - \\exp\\left(-\\frac{N_f \\cdot A_t}{4\\pi R^2}\\right)$$</p>
+            <p>where $N_f$ is fragment count, $A_t$ is target vulnerable area, and $R$ is detonation miss distance.</p>
+          </li>
+          <li>
+            <strong>2. Hit-to-Kill (HTK / 直接動能撞擊):</strong>
+            <p>Dedicated anti-ballistic missile systems (e.g., PAC-3 MSE, THAAD, SM-3) employ Kinetic Kill Vehicles (KKV) with divert attitude thrusters (DACS) to achieve physical direct impact ($R = 0\\text{ m}$), relying on extreme kinetic energy ($E_k = \\frac{1}{2}mv^2$) to pulverize hardened reentry vehicles.</p>
+          </li>
+        </ul>
+
+        <h3>6. Implementation Algorithm (JavaScript)</h3>
         <pre><code class="language-js">function calculatePN(r_m, v_m, r_t, v_t, N) {
   const los = new THREE.Vector3().subVectors(r_t, r_m);
   const R = los.length();
@@ -102,7 +119,24 @@ export class MathModal {
           </li>
         </ul>
 
-        <h3>5. 核心演算法實現 (JavaScript)</h3>
+        <h3>5. 末端攔截引信機制：近炸引信 vs. 直接動能撞擊 (Hit-to-Kill)</h3>
+        <p>在真實世界的防空作戰工程中，飛彈並非必須以「肉體物理相撞」才能摧毀目標：</p>
+
+        <ul>
+          <li>
+            <strong>1. 近炸引信與高爆破片殺傷彈頭（Proximity Fuze & Blast-Fragmentation）：</strong>
+            <p>防空與空對空飛彈（如 AIM-9X、AIM-120、愛國者 PAC-2、鐵穹 Tamir）配備主動雷射或雷達都卜勒近炸引信。當飛彈飛抵目標周圍殺傷半徑（$5 \\sim 15\\text{ m}$）內時，引信會以微秒級速度觸發彈頭引爆，向四周釋放數千顆高速鎢合金預製破片（初速達 $2,000 \\sim 3,000\\text{ m/s}$）與高壓衝擊波，直接撕裂機體與航電。</p>
+            <p>殺傷機率與破片空間密度關係式：</p>
+            <p>$$P_k = 1 - \\exp\\left(-\\frac{N_f \\cdot A_t}{4\\pi R^2}\\right)$$</p>
+            <p>其中 $N_f$ 為預製破片總數，$A_t$ 為目標易損面積，$R$ 為引爆脫靶距離。只要 $R \\le 15\\text{ m}$，殺傷率即趨近 $100\\%$，大幅降低了超音速終端導引的過載負擔。</p>
+          </li>
+          <li>
+            <strong>2. 直接動能撞擊（Hit-to-Kill, HTK）：</strong>
+            <p>專門用於反彈道飛彈系統（如 PAC-3 MSE、THAAD、SM-3）採用動能攔截器（KKV），配備姿態控制微型火箭（DACS）進行毫米級精度微調，直接以數倍音速物理正面撞擊敵方堅硬彈頭，依靠巨大動能（$E_k = \\frac{1}{2}mv^2$）徹底粉碎彈頭。</p>
+          </li>
+        </ul>
+
+        <h3>6. 核心演算法實現 (JavaScript)</h3>
         <pre><code class="language-js">function calculatePN(r_m, v_m, r_t, v_t, N) {
   const los = new THREE.Vector3().subVectors(r_t, r_m);
   const R = los.length();
