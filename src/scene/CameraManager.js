@@ -304,12 +304,13 @@ export class CameraManager {
         }
       }
     } else if (this.mode === 'missile-pov') {
-      // Camera located right at missile nose seeker head, looking forward along missile velocity
-      const noseOffset = new THREE.Vector3(0, 0, -4);
+      // Camera located right in front of missile nose seeker head, looking forward along missile orientation
+      const noseOffset = new THREE.Vector3(0, 0, -5.2);
       noseOffset.applyQuaternion(missilePhysics.orientation);
       const camPos = missilePhysics.position.clone().add(noseOffset);
       
-      const lookTarget = missilePhysics.position.clone().addScaledVector(missilePhysics.velocity.clone().normalize(), 500);
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(missilePhysics.orientation);
+      const lookTarget = camPos.clone().addScaledVector(forward, 500);
       
       this.camera.position.copy(camPos);
       this.camera.lookAt(lookTarget);

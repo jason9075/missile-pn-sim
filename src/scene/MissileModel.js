@@ -265,7 +265,7 @@ export class MissileModel {
     }
   }
 
-  update(missilePhysics, overlaysConfig, delta = 0.016) {
+  update(missilePhysics, overlaysConfig, delta = 0.016, cameraMode = 'free') {
     // 1. Check hit status and switch visual mesh material
     if (missilePhysics.isHit) {
       this.setHitVisualState(true);
@@ -273,13 +273,20 @@ export class MissileModel {
       this.setHitVisualState(false);
     }
 
+    // In missile-pov (First Person Seeker POV), hide missile body mesh so it never obstructs the camera
+    if (cameraMode === 'missile-pov') {
+      this.meshGroup.visible = false;
+    } else {
+      this.meshGroup.visible = true;
+    }
+
     // Update Missile Body Position & Orientation
     this.group.visible = true;
     this.group.position.copy(missilePhysics.position);
     this.group.quaternion.copy(missilePhysics.orientation);
 
-    // Flame flicker (only when launched and active)
-    if (missilePhysics.isLaunched && !missilePhysics.isHit && !missilePhysics.isMissed) {
+    // Flame flicker (only when launched, active, and not in POV)
+    if (missilePhysics.isLaunched && !missilePhysics.isHit && !missilePhysics.isMissed && cameraMode !== 'missile-pov') {
       this.flame.visible = true;
       this.thrusterLight.intensity = 2.5 + Math.random() * 1.5;
     } else {
