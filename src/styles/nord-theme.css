@@ -305,6 +305,68 @@ canvas {
   color: var(--nord6);
 }
 
+/* Guidance command clipped by the airframe limit — the missile cannot comply */
+.hud-value.is-saturated {
+  color: var(--nord12);
+  text-shadow: 0 0 8px rgba(208, 135, 112, 0.4);
+}
+
+/* Aerodynamic limit has eroded the available G below the structural ceiling */
+.hud-value.is-degraded {
+  color: var(--nord13);
+}
+
+/* Transverse-plane direction gauge for the guidance command */
+.hud-vector-item {
+  align-items: center;
+}
+
+.hud-vector {
+  width: 76px;
+  height: 76px;
+  margin-top: 0.1rem;
+  overflow: visible;
+}
+
+.vec-limit {
+  fill: none;
+  stroke: var(--nord3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.vec-axis {
+  stroke: var(--nord3);
+  stroke-width: 0.8;
+  opacity: 0.65;
+}
+
+.vec-tick {
+  fill: var(--nord3);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.vec-shaft {
+  stroke: var(--nord8);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.vec-head {
+  fill: var(--nord8);
+}
+
+/* Command clipped by the airframe limit — arrow is pinned to the circle */
+.hud-vector.is-saturated .vec-shaft {
+  stroke: var(--nord12);
+}
+
+.hud-vector.is-saturated .vec-head {
+  fill: var(--nord12);
+}
+
 /* God's View (Ground Truth) Item Styling */
 .hud-item.gods-view .hud-label {
   color: #EBCB8B;

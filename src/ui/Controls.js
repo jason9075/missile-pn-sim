@@ -31,6 +31,11 @@ export class Controls {
 
     this.targetPatternSelect = document.getElementById('target-pattern');
 
+    // Airframe Limits
+    this.gLimitInput = document.getElementById('g-limit');
+    this.valGLimit = document.getElementById('val-g-limit');
+    this.toggleAeroLimit = document.getElementById('toggle-aero-limit');
+
     // Overlays
     this.toggleLos = document.getElementById('toggle-los');
     this.toggleAccel = document.getElementById('toggle-accel');
@@ -45,6 +50,8 @@ export class Controls {
         missileSpeed: parseFloat(this.missileSpeedInput.value),
         targetSpeed: parseFloat(this.targetSpeedInput.value),
         targetPattern: this.targetPatternSelect ? this.targetPatternSelect.value : 'coastal-crossing',
+        gLimit: parseFloat(this.gLimitInput.value),
+        aeroLimit: this.toggleAeroLimit.checked,
         cameraMode: this.cameraSelect ? this.cameraSelect.value : 'free',
         showLOS: this.toggleLos.checked,
         showAccel: this.toggleAccel.checked,
@@ -91,7 +98,20 @@ export class Controls {
         if (this.callbacks.onTargetPatternChange) this.callbacks.onTargetPatternChange(settings.targetPattern);
       }
 
-      // 5. Camera Mode
+      // 5. Structural G-Limit
+      if (typeof settings.gLimit === 'number' && !isNaN(settings.gLimit)) {
+        this.gLimitInput.value = settings.gLimit;
+        this.valGLimit.textContent = settings.gLimit;
+        if (this.callbacks.onGLimitChange) this.callbacks.onGLimitChange(settings.gLimit);
+      }
+
+      // 6. Aerodynamic (q-dependent) G-Limit
+      if (typeof settings.aeroLimit === 'boolean') {
+        this.toggleAeroLimit.checked = settings.aeroLimit;
+        if (this.callbacks.onAeroLimitChange) this.callbacks.onAeroLimitChange(settings.aeroLimit);
+      }
+
+      // 7. Camera Mode
       if (settings.cameraMode && this.cameraSelect) {
         this.cameraSelect.value = settings.cameraMode;
         if (this.cameraHint) {
@@ -100,7 +120,7 @@ export class Controls {
         if (this.callbacks.onCameraChange) this.callbacks.onCameraChange(settings.cameraMode);
       }
 
-      // 6. Visual Overlays
+      // 8. Visual Overlays
       if (typeof settings.showLOS === 'boolean') this.toggleLos.checked = settings.showLOS;
       if (typeof settings.showAccel === 'boolean') this.toggleAccel.checked = settings.showAccel;
       if (typeof settings.showVel === 'boolean') this.toggleVel.checked = settings.showVel;
@@ -179,6 +199,18 @@ export class Controls {
       this.valTargetSpeed.textContent = val;
       this.saveSettings();
       if (this.callbacks.onTargetSpeedChange) this.callbacks.onTargetSpeedChange(val);
+    });
+
+    this.gLimitInput.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      this.valGLimit.textContent = val;
+      this.saveSettings();
+      if (this.callbacks.onGLimitChange) this.callbacks.onGLimitChange(val);
+    });
+
+    this.toggleAeroLimit.addEventListener('change', (e) => {
+      this.saveSettings();
+      if (this.callbacks.onAeroLimitChange) this.callbacks.onAeroLimitChange(e.target.checked);
     });
 
     // Overlay checkboxes

@@ -3,6 +3,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import hdrUrl from '../../assets/citrus_orchard_road_puresky_1k.hdr';
 import { Terrain } from './Terrain.js';
 import { Water } from './Water.js';
+import { LAUNCH_AZIMUTH, LAUNCH_PITCH } from '../physics/Missile.js';
 
 export class Environment {
   constructor(scene) {
@@ -80,14 +81,11 @@ export class Environment {
     baseMesh.receiveShadow = true;
     this.launcherGroup.add(baseMesh);
 
-    // 2. Rotating Turret Assembly (Aimed towards incoming threat corridor across the strait)
-    // Azimuth: 58 degrees (1.012 rad) East-Northeast, Elevation Pitch: 45 degrees
-    const launchAzimuth = 1.012; // rad
-    const launchPitch = Math.PI / 4; // 45 deg
-
+    // 2. Fixed Turret Assembly, laid on the threat corridor across the strait.
+    // The battery does not slew — orientation comes from the shared rail constants.
     this.turretGroup = new THREE.Group();
     this.turretGroup.position.set(0, 4, 0);
-    this.turretGroup.rotation.y = -launchAzimuth;
+    this.turretGroup.rotation.y = -LAUNCH_AZIMUTH;
 
     // Turret Rotating Base Ring
     const turretGeo = new THREE.CylinderGeometry(8, 9, 2.5, 16);
@@ -110,10 +108,10 @@ export class Environment {
     rightBracket.position.set(4.2, 3.5, 0);
     this.turretGroup.add(rightBracket);
 
-    // 3. Elevating Quad Launch Tubes Assembly (Pivoting up towards threat)
+    // 3. Quad Launch Tubes Assembly, fixed at the rail elevation
     const elevatingAssembly = new THREE.Group();
     elevatingAssembly.position.set(0, 3.5, 0);
-    elevatingAssembly.rotation.x = launchPitch; // +45 degree pitch up along -Z forward vector
+    elevatingAssembly.rotation.x = LAUNCH_PITCH; // pitch up along the -Z forward vector
 
     // Launch Tubes (aligned along Z axis: -Z forward, +Z back)
     const tubeGeo = new THREE.CylinderGeometry(1.2, 1.2, 12, 16);
@@ -144,14 +142,6 @@ export class Environment {
     this.launcherGroup.add(this.turretGroup);
 
     this.scene.add(this.launcherGroup);
-  }
-
-  setLauncherAim(targetPos) {
-    if (!targetPos || !this.turretGroup) return;
-    const dx = targetPos.x - 0;
-    const dz = targetPos.z - 0;
-    const launchAzimuth = Math.atan2(dx, -dz);
-    this.turretGroup.rotation.y = -launchAzimuth;
   }
 
   update(delta) {

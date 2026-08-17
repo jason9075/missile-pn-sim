@@ -1,4 +1,56 @@
 import * as THREE from 'three';
+import { LAUNCH_AZIMUTH } from './Missile.js';
+
+/**
+ * Builds a pure 90° beam-crossing track, optionally spawning upstream of it.
+ *
+ * `beamPoint` is where the track passes closest to the launcher, so the heading
+ * there — perpendicular to the line of sight at bearing psi = atan2(x, -z) — is
+ * the classic beam geometry. Placing that point on the launch bearing (see
+ * BEAM_CROSSING_TRACK below) makes the track perpendicular to the fixed rail as
+ * well, so it reads as a clean right-angle crossing when viewed from above.
+ *
+ * Spawning the target *at* that point opens the engagement already at closest
+ * approach; a smaller `spawnAspectDeg` backs it up along the track instead.
+ * Along a straight track sin(aspect) = d / R, hence:
+ *
+ *   R_spawn = d / sin(aspect),   backward offset = d / tan(aspect)
+ *
+ * @param {THREE.Vector3} beamPoint - closest approach point of the track
+ * @param {number} spawnAspectDeg - aspect angle at spawn (90 = spawn on the beam point)
+ * @param {number} [side=1] - +1 or -1 to pick which way it crosses
+ * @returns {{initialPosition: THREE.Vector3, direction: THREE.Vector3}}
+ */
+function beamCrossingTrack(beamPoint, spawnAspectDeg, side = 1) {
+  const psi = Math.atan2(beamPoint.x, -beamPoint.z);
+  const direction = new THREE.Vector3(
+    side * Math.cos(psi),
+    0,
+    side * Math.sin(psi)
+  ).normalize();
+
+  const beamRange = Math.hypot(beamPoint.x, beamPoint.z);
+  const offset = beamRange / Math.tan(spawnAspectDeg * (Math.PI / 180));
+  const initialPosition = beamPoint.clone().addScaledVector(direction, -offset);
+
+  return { initialPosition, direction };
+}
+
+/* Beam point sits on the fixed launch bearing, so the track crosses the rail at
+ * a true right angle in plan view. Derived from LAUNCH_AZIMUTH rather than
+ * hardcoded — move the rail and the corridor follows it. */
+const BEAM_CROSSING_RANGE = 1575; // m, horizontal distance at closest approach
+const BEAM_CROSSING_ALTITUDE = 560; // m
+
+const BEAM_CROSSING_TRACK = beamCrossingTrack(
+  new THREE.Vector3(
+    BEAM_CROSSING_RANGE * Math.sin(LAUNCH_AZIMUTH),
+    BEAM_CROSSING_ALTITUDE,
+    -BEAM_CROSSING_RANGE * Math.cos(LAUNCH_AZIMUTH)
+  ),
+  90, // spawn on the beam point
+  -1
+);
 
 export const TARGET_ROUTES = {
   'coastal-crossing': {
@@ -11,6 +63,12 @@ export const TARGET_ROUTES = {
     name: 'Direct Inbound',
     initialPosition: new THREE.Vector3(2400, 650, -1400),
     direction: new THREE.Vector3(-0.84, -0.04, 0.54).normalize(),
+    speed: 180
+  },
+  'beam-crossing': {
+    name: 'Beam Crossing (90°)',
+    initialPosition: BEAM_CROSSING_TRACK.initialPosition,
+    direction: BEAM_CROSSING_TRACK.direction,
     speed: 180
   }
 };

@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 
+/**
+ * Fixed launch rail orientation. The battery does not slew, so these also
+ * define the launcher turret pose in Environment.initLauncher() — the two must
+ * stay in agreement or the round leaves the tube at the wrong angle.
+ */
+export const LAUNCH_AZIMUTH = 1.012; // rad, 58° east-north-east
+export const LAUNCH_PITCH = Math.PI / 4; // rad, 45° elevation
+
 export class Missile {
   constructor(options = {}) {
     this.initialPosition = options.initialPosition || new THREE.Vector3(0, 10, 0);
@@ -35,13 +43,11 @@ export class Missile {
       this.initialPosition.copy(initialPos);
     }
     this.position.copy(this.initialPosition);
-    // Initial launch pitch and azimuth perfectly aligned with launcher turret (58 deg azimuth, 45 deg elevation)
-    const launchAzimuth = 1.012; // rad (58 deg)
-    const launchPitch = Math.PI / 4; // 45 deg
+    // Rests on the fixed rail, aligned with the launcher turret
     const launchDir = new THREE.Vector3(
-      Math.sin(launchAzimuth) * Math.cos(launchPitch),
-      Math.sin(launchPitch),
-      -Math.cos(launchAzimuth) * Math.cos(launchPitch)
+      Math.sin(LAUNCH_AZIMUTH) * Math.cos(LAUNCH_PITCH),
+      Math.sin(LAUNCH_PITCH),
+      -Math.cos(LAUNCH_AZIMUTH) * Math.cos(LAUNCH_PITCH)
     ).normalize();
 
     this.velocity.copy(launchDir).multiplyScalar(this.speed);
@@ -54,23 +60,6 @@ export class Missile {
     this.lastAppliedAccel.set(0, 0, 0);
     this.closestDistance = Infinity;
 
-    this.updateOrientation();
-  }
-
-  setAimTarget(targetPos) {
-    if (!targetPos || this.isLaunched) return;
-    const dx = targetPos.x - this.position.x;
-    const dz = targetPos.z - this.position.z;
-    const launchAzimuth = Math.atan2(dx, -dz);
-    const launchPitch = Math.PI / 4;
-
-    const launchDir = new THREE.Vector3(
-      Math.sin(launchAzimuth) * Math.cos(launchPitch),
-      Math.sin(launchPitch),
-      -Math.cos(launchAzimuth) * Math.cos(launchPitch)
-    ).normalize();
-
-    this.velocity.copy(launchDir).multiplyScalar(this.speed);
     this.updateOrientation();
   }
 

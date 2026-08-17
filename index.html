@@ -52,7 +52,18 @@
         <select id="target-pattern">
           <option value="coastal-crossing">Coastline Crossing</option>
           <option value="direct-inbound">Direct Inbound</option>
+          <option value="beam-crossing">Beam Crossing (90°)</option>
         </select>
+      </div>
+      <hr class="panel-divider" />
+      <div class="control-group">
+        <span class="control-group-title">Airframe Limits</span>
+        <label for="g-limit">Structural G-Limit (a<sub>max</sub>): <span id="val-g-limit">30</span> G</label>
+        <input type="range" id="g-limit" min="5" max="60" step="1" value="30" />
+        <label class="checkbox-label" title="Scale the achievable G with dynamic pressure q = ½ρV², so low speed or high altitude degrades manoeuvrability">
+          <input type="checkbox" id="toggle-aero-limit" />
+          <span>Aero G-Limit (q-dependent)</span>
+        </label>
       </div>
       <hr class="panel-divider" />
       <div class="control-group">
@@ -117,8 +128,30 @@
         <span id="tel-cmd-accel" class="hud-value">0.0 m/s² (0.0 G)</span>
       </div>
       <div class="hud-item">
+        <span class="hud-label" title="Body-frame split of a_c into fin channels — yaw: R/L (rudder), pitch: U/D (elevator)">Cmd Yaw / Pitch</span>
+        <span id="tel-cmd-axes" class="hud-value">R 0.0 | U 0.0 G</span>
+      </div>
+      <div class="hud-item">
         <span class="hud-label">Applied Accel (a<sub>m</sub>)</span>
-        <span id="tel-applied-accel" class="hud-value">0.0 m/s²</span>
+        <span id="tel-applied-accel" class="hud-value">0.0 m/s² (0.0 G)</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">G-Limit (a<sub>max</sub>)</span>
+        <span id="tel-g-limit" class="hud-value">30.0 G</span>
+      </div>
+      <div class="hud-item hud-vector-item">
+        <span class="hud-label" title="a_c in the transverse plane — horizontal is yaw (rudder), vertical is pitch (elevator). Dashed circle is the current G-limit.">a<sub>c</sub> Direction</span>
+        <svg id="tel-cmd-vector" class="hud-vector" viewBox="-46 -46 92 92" aria-hidden="true">
+          <circle class="vec-limit" cx="0" cy="0" r="30" />
+          <line class="vec-axis" x1="-34" y1="0" x2="34" y2="0" />
+          <line class="vec-axis" x1="0" y1="-34" x2="0" y2="34" />
+          <text class="vec-tick" x="-40" y="3.5">L</text>
+          <text class="vec-tick" x="40" y="3.5">R</text>
+          <text class="vec-tick" x="0" y="-36">U</text>
+          <text class="vec-tick" x="0" y="43">D</text>
+          <line id="tel-vec-shaft" class="vec-shaft" x1="0" y1="0" x2="0" y2="0" />
+          <polygon id="tel-vec-head" class="vec-head" points="0,-4.5 0,4.5 10,0" transform="translate(0,0)" />
+        </svg>
       </div>
     </div>
   </div>

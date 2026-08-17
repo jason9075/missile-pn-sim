@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const WORLD_FORWARD = new THREE.Vector3(0, 0, -1);
+
 export class VectorMath {
   /**
    * Computes closing velocity Vc = - dR/dt = - (r . vr) / R
@@ -42,6 +45,40 @@ export class VectorMath {
     const u_m = missileVel.clone().normalize();
     const perpComponent = new THREE.Vector3().crossVectors(omegaLos, u_m);
     return perpComponent.multiplyScalar(N * Vc);
+  }
+
+  /**
+   * Decomposes a transverse acceleration into missile body-frame yaw/pitch channels.
+   *
+   * For a zero-bank (skid-to-turn) missile the plane normal to the velocity is
+   * spanned by a horizontal "right" axis and an "up" axis, which map one-to-one
+   * onto the rudder and elevator fin commands:
+   *
+   *   e_right = u_m x y_world   (positive yaw = turn right)
+   *   e_up    = e_right x u_m   (positive pitch = pull up)
+   *
+   * Since a_c is perpendicular to u_m by construction, the two components fully
+   * reconstruct it: |a_c|^2 = a_yaw^2 + a_pitch^2.
+   *
+   * @param {THREE.Vector3} accel - transverse acceleration vector
+   * @param {THREE.Vector3} missileVel - missile velocity vector
+   * @returns {{yaw: number, pitch: number}} signed components, same units as accel
+   */
+  static decomposeBodyAxes(accel, missileVel) {
+    const speed = missileVel.length();
+    if (speed < 1e-5) return { yaw: 0, pitch: 0 };
+    const u_m = missileVel.clone().divideScalar(speed);
+
+    // Near-vertical flight leaves the horizontal reference undefined; swap to the
+    // world forward axis so the frame stays well conditioned.
+    const right = new THREE.Vector3().crossVectors(u_m, WORLD_UP);
+    if (right.lengthSq() < 1e-8) {
+      right.crossVectors(u_m, WORLD_FORWARD);
+    }
+    right.normalize();
+
+    const up = new THREE.Vector3().crossVectors(right, u_m).normalize();
+    return { yaw: accel.dot(right), pitch: accel.dot(up) };
   }
 
   /**

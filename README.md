@@ -20,9 +20,9 @@ Built with **Three.js**, **KaTeX**, **Prism.js**, and vanilla CSS/JavaScript in 
 * **Tactical Threat Flight Corridors**:
   * **`Coastline Crossing` (Lateral / Flank Interception)**: Target cruises straight north along the coastline, creating high LOS rotation rates ($\dot{\lambda}$) and demonstrating classical curved proportional pursuit lead geometry.
   * **`Direct Inbound` (Head-on / Frontal Interception)**: High-speed head-on approach across the strait ($\sim 580\text{ m/s}$ relative closing speed).
+  * **`Beam Crossing` (Pure 90° Flank)**: Beam point placed on the launch bearing at $d = 1575\text{ m}$, so the track is perpendicular to the fixed rail in plan view — and, since it is horizontal and shares the rail's azimuth, at exactly $90^\circ$ to the missile nose in 3D as well. Launch heading error is pure elevation ($26.5^\circ$, zero azimuth), the target adds nothing to $V_c$, and the miss distance settles near $11\text{ m}$ against the $12\text{ m}$ fuze — the tightest margin of the three.
 * **Co-linear Launcher Turret & Dynamic Aiming**:
-  * Dual-tube container launcher battery positioned on the island fortress with realistic azimuth rotation and $+45^\circ$ launch rail elevation.
-  * Launcher turret and resting missile automatically swivel and align with selected incoming threat bearings before launch.
+  * Quad-tube container launcher battery positioned on the island fortress. The rail is **fixed** at $58^\circ$ azimuth and $+45^\circ$ elevation and does not slew, so every engagement opens with a built-in heading error ($32^\circ$ head-on, up to $74^\circ$ on the flank corridor) that proportional navigation has to work off.
 * **Proximity Fuze & Combat Damage States**:
   * **Proximity Fuze ($12.0\text{m}$ Lethal Radius)**: Senses target proximity and triggers warhead detonation, eliminating discrete time-step skipping.
   * **Tactical Hologram Meshes**: Interception freezes the engagement point with **Translucent Cyan/Blue Ghost Mesh** for the missile and **Translucent Crimson Red Ghost Mesh** for the intercepted drone, alongside explosive fragmentation particles.
