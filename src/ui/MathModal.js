@@ -160,6 +160,58 @@ export class MathModal {
         <p><strong>Total LOS Rate Magnitude (displayed in Telemetry):</strong></p>
         <p>$$\\|\\boldsymbol{\\omega}_{los}\\| = \\frac{\\|\\mathbf{r} \\times \\mathbf{v}_r\\|}{R^2} = \\sqrt{\\omega_x^2 + \\omega_y^2 + \\omega_z^2} = \\sqrt{\\dot{\\theta}_{los}^2 + (\\dot{\\psi}_{los} \\cos\\theta_{los})^2}$$</p>
 
+        <div class="diagram-row">
+          <figure class="diagram-figure" role="img" aria-label="Three-dimensional diagram of the line-of-sight rotation plane containing the range vector r and relative velocity v_r, with the angular velocity vector omega-los shown as a circled-dot symbol at the missile, indicating it points out of the screen toward the viewer.">
+            <svg viewBox="0 0 460 300" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-r3d" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#88C0D0"/>
+                </marker>
+                <marker id="arrow-vr3d" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#B48EAD"/>
+                </marker>
+              </defs>
+              <ellipse cx="235" cy="165" rx="185" ry="62" fill="#3B4252" fill-opacity="0.35" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line x1="140" y1="205" x2="377" y2="125" stroke="#88C0D0" stroke-width="2.5" marker-end="url(#arrow-r3d)"/>
+              <text x="251" y="144" font-size="13" fill="#88C0D0" text-anchor="middle">r</text>
+              <line x1="377" y1="125" x2="345" y2="60" stroke="#B48EAD" stroke-width="2" marker-end="url(#arrow-vr3d)"/>
+              <text x="381" y="83" font-size="13" fill="#B48EAD" text-anchor="middle">v_r</text>
+              <circle cx="377" cy="125" r="4" fill="#BF616A"/>
+              <text x="386" y="118" font-size="12" fill="#E5E9F0">T</text>
+              <circle cx="140" cy="205" r="17" fill="#2E3440"/>
+              <circle cx="140" cy="205" r="12" fill="none" stroke="#EBCB8B" stroke-width="2.5"/>
+              <circle cx="140" cy="205" r="3.5" fill="#EBCB8B"/>
+              <text x="95" y="209" font-size="12" fill="#E5E9F0">M</text>
+              <text x="90" y="245" font-size="13" fill="#EBCB8B">ω_los</text>
+              <text x="230" y="288" font-size="10" fill="#D8DEE9" text-anchor="middle">⊙ = out of the page, toward you</text>
+            </svg>
+            <figcaption>The plane containing $\\mathbf{r}$ and $\\mathbf{v}_r$ is the instantaneous LOS rotation plane; $\\boldsymbol{\\omega}_{los} = (\\mathbf{r} \\times \\mathbf{v}_r)/R^2$ is normal to it. The ⊙ at pivot M is the standard symbol for a vector pointing straight out of the page, toward the viewer.</figcaption>
+          </figure>
+          <figure class="diagram-figure" role="img" aria-label="Head-on view looking directly along the omega-los rotation axis: a circle traces the sweep of the line-of-sight ray counter-clockwise around a central circled-dot symbol representing the angular velocity vector pointing straight out of the screen toward the viewer.">
+            <svg viewBox="0 0 380 280" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-r2d" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#88C0D0"/>
+                </marker>
+                <marker id="arrow-sweep-b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#EBCB8B"/>
+                </marker>
+              </defs>
+              <circle cx="190" cy="140" r="95" fill="none" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line x1="190" y1="140" x2="285" y2="140" stroke="#88C0D0" stroke-width="2.5" marker-end="url(#arrow-r2d)"/>
+              <text x="255" y="155" font-size="13" fill="#88C0D0">r</text>
+              <line x1="190" y1="140" x2="222" y2="51" stroke="#88C0D0" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.5"/>
+              <path d="M 285 140 A 95 95 0 0 0 222 51" fill="none" stroke="#EBCB8B" stroke-width="2.5" marker-end="url(#arrow-sweep-b)"/>
+              <circle cx="190" cy="140" r="17" fill="#2E3440"/>
+              <circle cx="190" cy="140" r="13" fill="none" stroke="#EBCB8B" stroke-width="2.5"/>
+              <circle cx="190" cy="140" r="3.5" fill="#EBCB8B"/>
+              <text x="70" y="100" font-size="14" fill="#EBCB8B">ω_los</text>
+              <text x="190" y="266" font-size="11" fill="#D8DEE9" text-anchor="middle">⊙ = out of the page, toward the viewer</text>
+            </svg>
+            <figcaption>Staring straight into $\\boldsymbol{\\omega}_{los}$: the LOS ray sweeps counter-clockwise about the pivot. The ⊙ at the center marks the axis pointing directly at the viewer — the classic "out of the page" convention.</figcaption>
+          </figure>
+        </div>
+
         <h3>3. PN Algorithm: Inputs, Outputs & Autopilot Control Flow</h3>
         <p>How does the guidance computer interact with onboard sensors and control actuators?</p>
 
@@ -189,6 +241,63 @@ export class MathModal {
         <p>giving the two fin channels $a_{c,yaw} = \\mathbf{a}_c \\cdot \\hat{e}_{right}$ (positive $=$ turn right) and $a_{c,pitch} = \\mathbf{a}_c \\cdot \\hat{e}_{up}$ (positive $=$ pull up). Because $\\mathbf{a}_c \\perp \\mathbf{u}_m$ by construction the split is lossless:</p>
         <p>$$\\|\\mathbf{a}_c\\|^2 = a_{c,yaw}^2 + a_{c,pitch}^2$$</p>
         <p>Both channels are shown live on the <b>Cmd Yaw / Pitch</b> telemetry row, signed as R/L and U/D, and drawn as a 2D arrow on the <b>$\\mathbf{a}_c$ Direction</b> gauge beneath it — horizontal deflection is rudder, vertical is elevator. The arrow is scaled by $\\|\\mathbf{a}_c\\| / a_{max}$, so the dashed circle marks the current G-limit and an arrow touching it means the command is saturated.</p>
+
+        <div class="diagram-row">
+          <figure class="diagram-figure" role="img" aria-label="Right-hand rule diagram showing the missile heading vector u_m and the LOS angular velocity omega-los drawn as a circled-dot pointing out of the page, whose cross product yields the guidance acceleration command a_c pointing perpendicular to both.">
+            <svg viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-um" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#88C0D0"/>
+                </marker>
+                <marker id="arrow-ac" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#A3BE8C"/>
+                </marker>
+              </defs>
+              <line x1="190" y1="230" x2="190" y2="80" stroke="#88C0D0" stroke-width="2.5" marker-end="url(#arrow-um)"/>
+              <text x="205" y="115" font-size="13" fill="#88C0D0">u_m</text>
+              <line x1="190" y1="230" x2="70" y2="230" stroke="#A3BE8C" stroke-width="2.5" marker-end="url(#arrow-ac)"/>
+              <text x="130" y="212" font-size="13" fill="#A3BE8C" text-anchor="middle">a_c</text>
+              <path d="M 166 230 L 166 206 L 190 206" fill="none" stroke="#4C566A" stroke-width="1.5"/>
+              <circle cx="190" cy="230" r="17" fill="#2E3440"/>
+              <circle cx="190" cy="230" r="13" fill="none" stroke="#EBCB8B" stroke-width="2.5"/>
+              <circle cx="190" cy="230" r="3.5" fill="#EBCB8B"/>
+              <text x="190" y="270" font-size="13" fill="#EBCB8B" text-anchor="middle">ω_los</text>
+              <text x="190" y="292" font-size="10" fill="#D8DEE9" text-anchor="middle">⊙ = out of the page, toward you</text>
+            </svg>
+            <figcaption>Right-hand rule: with $\\boldsymbol{\\omega}_{los}$ (⊙, out of the page) and $\\mathbf{u}_m$ (missile heading) as inputs, $\\mathbf{a}_c = N V_c (\\boldsymbol{\\omega}_{los} \\times \\mathbf{u}_m)$ points perpendicular to both — steering the nose toward the side the LOS is sweeping.</figcaption>
+          </figure>
+          <figure class="diagram-figure" role="img" aria-label="View looking down the missile heading axis from behind, marked with a circled-cross symbol for into the page, showing the acceleration command a_c projected onto the body-normal e-right and e-up axes to give the yaw and pitch fin channels.">
+            <svg viewBox="0 0 340 300" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-eright" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#4C566A"/>
+                </marker>
+                <marker id="arrow-eup" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#4C566A"/>
+                </marker>
+                <marker id="arrow-ac2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#A3BE8C"/>
+                </marker>
+              </defs>
+              <line x1="170" y1="150" x2="290" y2="150" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-eright)"/>
+              <text x="300" y="155" font-size="12" fill="#D8DEE9">ê_right</text>
+              <line x1="170" y1="150" x2="170" y2="30" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-eup)"/>
+              <text x="170" y="22" font-size="12" fill="#D8DEE9" text-anchor="middle">ê_up</text>
+              <line x1="255" y1="65" x2="255" y2="150" stroke="#4C566A" stroke-width="1" stroke-dasharray="2 3"/>
+              <line x1="170" y1="65" x2="255" y2="65" stroke="#4C566A" stroke-width="1" stroke-dasharray="2 3"/>
+              <line x1="170" y1="150" x2="255" y2="65" stroke="#A3BE8C" stroke-width="2.5" marker-end="url(#arrow-ac2)"/>
+              <text x="262" y="60" font-size="13" fill="#A3BE8C">a_c</text>
+              <text x="255" y="168" font-size="11" fill="#A3BE8C" text-anchor="middle">a_c,yaw</text>
+              <text x="112" y="62" font-size="11" fill="#A3BE8C" text-anchor="end">a_c,pitch</text>
+              <circle cx="170" cy="150" r="15" fill="#2E3440"/>
+              <circle cx="170" cy="150" r="11" fill="none" stroke="#88C0D0" stroke-width="2"/>
+              <line x1="163" y1="143" x2="177" y2="157" stroke="#88C0D0" stroke-width="2"/>
+              <line x1="163" y1="157" x2="177" y2="143" stroke="#88C0D0" stroke-width="2"/>
+              <text x="170" y="185" font-size="10" fill="#88C0D0" text-anchor="middle">u_m (into the page)</text>
+            </svg>
+            <figcaption>Viewed from behind the missile along $\\mathbf{u}_m$ (⊗, into the page): $\\mathbf{a}_c$ is projected onto the body-normal axes $\\hat{e}_{right}$/$\\hat{e}_{up}$ to give the two fin channels $a_{c,yaw}$ and $a_{c,pitch}$ sent to the autopilot.</figcaption>
+          </figure>
+        </div>
 
         <p><strong>3. Closed-Loop Autopilot Control Diagram:</strong></p>
         <p>$$\\text{Seeker } (V_c, \\boldsymbol{\\omega}_{los}) \\xrightarrow{\\text{PN Guidance Law}} \\mathbf{a}_c \\text{ (Acceleration Cmd)} \\xrightarrow{\\text{Autopilot}} \\boldsymbol{\\delta} \\text{ (Fin Deflection)} \\xrightarrow{\\text{Aerodynamic Lift}} \\mathbf{a}_m \\text{ (Flight Turn)}$$</p>
@@ -429,6 +538,58 @@ export class MathModal {
         <p><strong>視線旋轉總角速率純量大小（即 Telemetry 面板顯示的 $\\|\\boldsymbol{\\omega}_{los}\\|$）：</strong></p>
         <p>$$\\|\\boldsymbol{\\omega}_{los}\\| = \\frac{\\|\\mathbf{r} \\times \\mathbf{v}_r\\|}{R^2} = \\sqrt{\\omega_x^2 + \\omega_y^2 + \\omega_z^2} = \\sqrt{\\dot{\\theta}_{los}^2 + (\\dot{\\psi}_{los} \\cos\\theta_{los})^2}$$</p>
 
+        <div class="diagram-row">
+          <figure class="diagram-figure" role="img" aria-label="視線旋轉平面的三維示意圖，平面包含距離向量 r 與相對速度 v_r，角速度向量 ω_los 以飛彈處的圓圈加圓點符號表示，代表其方向垂直穿出螢幕、指向觀察者。">
+            <svg viewBox="0 0 460 300" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-r3d-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#88C0D0"/>
+                </marker>
+                <marker id="arrow-vr3d-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#B48EAD"/>
+                </marker>
+              </defs>
+              <ellipse cx="235" cy="165" rx="185" ry="62" fill="#3B4252" fill-opacity="0.35" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line x1="140" y1="205" x2="377" y2="125" stroke="#88C0D0" stroke-width="2.5" marker-end="url(#arrow-r3d-zh)"/>
+              <text x="251" y="144" font-size="13" fill="#88C0D0" text-anchor="middle">r</text>
+              <line x1="377" y1="125" x2="345" y2="60" stroke="#B48EAD" stroke-width="2" marker-end="url(#arrow-vr3d-zh)"/>
+              <text x="381" y="83" font-size="13" fill="#B48EAD" text-anchor="middle">v_r</text>
+              <circle cx="377" cy="125" r="4" fill="#BF616A"/>
+              <text x="386" y="118" font-size="12" fill="#E5E9F0">T</text>
+              <circle cx="140" cy="205" r="17" fill="#2E3440"/>
+              <circle cx="140" cy="205" r="12" fill="none" stroke="#EBCB8B" stroke-width="2.5"/>
+              <circle cx="140" cy="205" r="3.5" fill="#EBCB8B"/>
+              <text x="95" y="209" font-size="12" fill="#E5E9F0">M</text>
+              <text x="90" y="245" font-size="13" fill="#EBCB8B">ω_los</text>
+              <text x="230" y="288" font-size="10" fill="#D8DEE9" text-anchor="middle">⊙ = 穿出螢幕，指向你</text>
+            </svg>
+            <figcaption>包含 $\\mathbf{r}$ 與 $\\mathbf{v}_r$ 的平面即為瞬時視線旋轉平面；$\\boldsymbol{\\omega}_{los} = (\\mathbf{r} \\times \\mathbf{v}_r)/R^2$ 垂直於此平面。樞紐點 M 上的 ⊙ 符號是標準慣例，代表向量垂直穿出紙面、直指觀察者。</figcaption>
+          </figure>
+          <figure class="diagram-figure" role="img" aria-label="沿 ω_los 旋轉軸直視的正面示意圖：一個圓描繪視線射線繞樞紐逆時針掃掠的路徑，中心的圓圈加圓點符號代表角速度向量正好垂直穿出螢幕、指向觀察者。">
+            <svg viewBox="0 0 380 280" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-r2d-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#88C0D0"/>
+                </marker>
+                <marker id="arrow-sweep-b-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#EBCB8B"/>
+                </marker>
+              </defs>
+              <circle cx="190" cy="140" r="95" fill="none" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line x1="190" y1="140" x2="285" y2="140" stroke="#88C0D0" stroke-width="2.5" marker-end="url(#arrow-r2d-zh)"/>
+              <text x="255" y="155" font-size="13" fill="#88C0D0">r</text>
+              <line x1="190" y1="140" x2="222" y2="51" stroke="#88C0D0" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.5"/>
+              <path d="M 285 140 A 95 95 0 0 0 222 51" fill="none" stroke="#EBCB8B" stroke-width="2.5" marker-end="url(#arrow-sweep-b-zh)"/>
+              <circle cx="190" cy="140" r="17" fill="#2E3440"/>
+              <circle cx="190" cy="140" r="13" fill="none" stroke="#EBCB8B" stroke-width="2.5"/>
+              <circle cx="190" cy="140" r="3.5" fill="#EBCB8B"/>
+              <text x="70" y="100" font-size="14" fill="#EBCB8B">ω_los</text>
+              <text x="190" y="266" font-size="11" fill="#D8DEE9" text-anchor="middle">⊙ = 穿出螢幕，指向觀察者</text>
+            </svg>
+            <figcaption>直視 $\\boldsymbol{\\omega}_{los}$ 的方向：視線射線繞樞紐逆時針掃掠。中心的 ⊙ 符號標示旋轉軸直指觀察者 —— 這正是物理學中「穿出紙面」向量的經典表示法。</figcaption>
+          </figure>
+        </div>
+
         <h3>3. 比例導引算法：輸入端、輸出端與飛控控制流程</h3>
         <p>導引電腦（Guidance Computer）如何從感測器讀取訊號並控制飛彈？</p>
 
@@ -458,6 +619,63 @@ export class MathModal {
         <p>兩個舵面通道即為 $a_{c,yaw} = \\mathbf{a}_c \\cdot \\hat{e}_{right}$（正值 $=$ 右轉）與 $a_{c,pitch} = \\mathbf{a}_c \\cdot \\hat{e}_{up}$（正值 $=$ 拉起）。由於 $\\mathbf{a}_c$ 在建構上就垂直於 $\\mathbf{u}_m$，這個分解是無損的：</p>
         <p>$$\\|\\mathbf{a}_c\\|^2 = a_{c,yaw}^2 + a_{c,pitch}^2$$</p>
         <p>兩個分量即時顯示於遙測面板的 <b>Cmd Yaw / Pitch</b> 欄位（以 R/L 與 U/D 表示正負向），並於其下方的 <b>$\\mathbf{a}_c$ Direction</b> 儀表以 2D 箭頭繪出 —— 水平偏轉對應方向舵、垂直偏轉對應升降舵。箭頭長度依 $\\|\\mathbf{a}_c\\| / a_{max}$ 正規化，因此虛線圓即為當前 G 上限，箭頭觸及圓周就代表指令已飽和。</p>
+
+        <div class="diagram-row">
+          <figure class="diagram-figure" role="img" aria-label="右手定則示意圖：飛彈航向向量 u_m 與垂直穿出螢幕的視線角速度 ω_los（圓圈加圓點符號）取外積，得到同時垂直於兩者的導引加速度指令 a_c。">
+            <svg viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-um-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#88C0D0"/>
+                </marker>
+                <marker id="arrow-ac-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#A3BE8C"/>
+                </marker>
+              </defs>
+              <line x1="190" y1="230" x2="190" y2="80" stroke="#88C0D0" stroke-width="2.5" marker-end="url(#arrow-um-zh)"/>
+              <text x="205" y="115" font-size="13" fill="#88C0D0">u_m</text>
+              <line x1="190" y1="230" x2="70" y2="230" stroke="#A3BE8C" stroke-width="2.5" marker-end="url(#arrow-ac-zh)"/>
+              <text x="130" y="212" font-size="13" fill="#A3BE8C" text-anchor="middle">a_c</text>
+              <path d="M 166 230 L 166 206 L 190 206" fill="none" stroke="#4C566A" stroke-width="1.5"/>
+              <circle cx="190" cy="230" r="17" fill="#2E3440"/>
+              <circle cx="190" cy="230" r="13" fill="none" stroke="#EBCB8B" stroke-width="2.5"/>
+              <circle cx="190" cy="230" r="3.5" fill="#EBCB8B"/>
+              <text x="190" y="270" font-size="13" fill="#EBCB8B" text-anchor="middle">ω_los</text>
+              <text x="190" y="292" font-size="10" fill="#D8DEE9" text-anchor="middle">⊙ = 穿出螢幕，指向你</text>
+            </svg>
+            <figcaption>右手定則：以垂直穿出螢幕的 $\\boldsymbol{\\omega}_{los}$（⊙）與飛彈航向 $\\mathbf{u}_m$ 為輸入，$\\mathbf{a}_c = N V_c (\\boldsymbol{\\omega}_{los} \\times \\mathbf{u}_m)$ 同時垂直於兩者 —— 引導機頭朝視線掃掠的那一側轉向。</figcaption>
+          </figure>
+          <figure class="diagram-figure" role="img" aria-label="從飛彈後方沿 u_m 方向（圓圈加叉號符號，代表穿入螢幕）觀看的示意圖：a_c 被投影到機身法平面上的 e_right / e_up 軸，得到偏航與俯仰兩個舵面控制通道。">
+            <svg viewBox="0 0 340 300" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrow-eright-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#4C566A"/>
+                </marker>
+                <marker id="arrow-eup-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#4C566A"/>
+                </marker>
+                <marker id="arrow-ac2-zh" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#A3BE8C"/>
+                </marker>
+              </defs>
+              <line x1="170" y1="150" x2="290" y2="150" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-eright-zh)"/>
+              <text x="300" y="155" font-size="12" fill="#D8DEE9">ê_right</text>
+              <line x1="170" y1="150" x2="170" y2="30" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-eup-zh)"/>
+              <text x="170" y="22" font-size="12" fill="#D8DEE9" text-anchor="middle">ê_up</text>
+              <line x1="255" y1="65" x2="255" y2="150" stroke="#4C566A" stroke-width="1" stroke-dasharray="2 3"/>
+              <line x1="170" y1="65" x2="255" y2="65" stroke="#4C566A" stroke-width="1" stroke-dasharray="2 3"/>
+              <line x1="170" y1="150" x2="255" y2="65" stroke="#A3BE8C" stroke-width="2.5" marker-end="url(#arrow-ac2-zh)"/>
+              <text x="262" y="60" font-size="13" fill="#A3BE8C">a_c</text>
+              <text x="255" y="168" font-size="11" fill="#A3BE8C" text-anchor="middle">a_c,yaw</text>
+              <text x="112" y="62" font-size="11" fill="#A3BE8C" text-anchor="end">a_c,pitch</text>
+              <circle cx="170" cy="150" r="15" fill="#2E3440"/>
+              <circle cx="170" cy="150" r="11" fill="none" stroke="#88C0D0" stroke-width="2"/>
+              <line x1="163" y1="143" x2="177" y2="157" stroke="#88C0D0" stroke-width="2"/>
+              <line x1="163" y1="157" x2="177" y2="143" stroke="#88C0D0" stroke-width="2"/>
+              <text x="170" y="185" font-size="10" fill="#88C0D0" text-anchor="middle">u_m（穿入螢幕）</text>
+            </svg>
+            <figcaption>從飛彈後方沿 $\\mathbf{u}_m$ 方向看去（⊗ 代表穿入紙面）：將 $\\mathbf{a}_c$ 投影到機身法平面的 $\\hat{e}_{right}$ / $\\hat{e}_{up}$ 軸上，即可得到送往自動駕駛儀的兩個舵面通道 $a_{c,yaw}$ 與 $a_{c,pitch}$。</figcaption>
+          </figure>
+        </div>
 
         <p><strong>3. 飛控閉迴路（Autopilot Control Loop）架構：</strong></p>
         <p>$$\\text{尋標頭/都卜勒測量 } (V_c, \\boldsymbol{\\omega}_{los}) \\xrightarrow{\\text{PN 導引律}} \\mathbf{a}_c \\text{ (加速度指令)} \\xrightarrow{\\text{飛控電腦 (Autopilot)}} \\boldsymbol{\\delta} \\text{ (舵機偏角)} \\xrightarrow{\\text{舵面氣動力}} \\mathbf{a}_m \\text{ (實際轉向過載)}$$</p>

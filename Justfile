@@ -10,7 +10,7 @@ install:
 dev:
   @[ -d node_modules ] || npm install --ignore-scripts
   @echo "\033[36m[gfx-lab] Starting Vite dev server...\033[0m"
-  node --require ./scripts/fix-noexec.cjs ./node_modules/vite/bin/vite.js --port 8080
+  node --require ./scripts/fix-noexec.cjs ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 8080
 
 # Production build → dist/
 build:
