@@ -61,26 +61,32 @@ const pathListPanel = new PathListPanel({
 /* ─── State ───────────────────────────────────────────────────────── */
 let isPaused = false;
 let stepRequested = false;
+let autoLaunchRemaining = null;
+
+function tryLaunch() {
+  if (missilePhysics.isLaunched) return false;
+
+  const currentTelemetry = pnController.calculateGuidance(
+    missilePhysics.position,
+    missilePhysics.velocity,
+    targetPhysics.position,
+    targetPhysics.velocity
+  );
+
+  if (currentTelemetry.loblEnabled && !currentTelemetry.inSeekerFOV) {
+    telemetryPanel.flashWarning('LOBL INHIBITED (NO LOCK)');
+    return false;
+  }
+
+  missilePhysics.launch();
+  autoLaunchRemaining = null;
+  return true;
+}
 
 /* ─── Controls Callback Handler ────────────────────────────────────── */
 const controls = new Controls({
   onLaunch: () => {
-    if (missilePhysics.isLaunched) return;
-
-    // Check LOBL launch constraint
-    const currentTelemetry = pnController.calculateGuidance(
-      missilePhysics.position,
-      missilePhysics.velocity,
-      targetPhysics.position,
-      targetPhysics.velocity
-    );
-
-    if (currentTelemetry.loblEnabled && !currentTelemetry.inSeekerFOV) {
-      telemetryPanel.flashWarning('LOBL INHIBITED (NO LOCK)');
-      return;
-    }
-
-    missilePhysics.launch();
+    tryLaunch();
   },
   onTogglePause: () => {
     isPaused = !isPaused;
@@ -96,6 +102,18 @@ const controls = new Controls({
     missileModel.explosionTriggered = false;
     cameraManager.resetOrbit();
     isPaused = false;
+
+    const autoCfg = controls.getAutoLaunchConfig();
+    if (autoCfg.enabled) {
+      if (autoCfg.delay <= 0.001) {
+        autoLaunchRemaining = 0;
+        tryLaunch();
+      } else {
+        autoLaunchRemaining = autoCfg.delay;
+      }
+    } else {
+      autoLaunchRemaining = null;
+    }
   },
   onSavePath: () => {
     if (!missilePhysics.trail || missilePhysics.trail.length < 2) {
@@ -138,6 +156,29 @@ const controls = new Controls({
   onLOBLChange: (enabled) => {
     pnController.setLOBLEnabled(enabled);
   },
+  onAutoLaunchChange: (enabled) => {
+    if (enabled && !missilePhysics.isLaunched) {
+      const autoCfg = controls.getAutoLaunchConfig();
+      if (autoCfg.delay <= 0.001) {
+        autoLaunchRemaining = 0;
+        tryLaunch();
+      } else {
+        autoLaunchRemaining = autoCfg.delay;
+      }
+    } else if (!enabled) {
+      autoLaunchRemaining = null;
+    }
+  },
+  onAutoLaunchDelayChange: (delay) => {
+    if (controls.getAutoLaunchConfig().enabled && !missilePhysics.isLaunched) {
+      if (delay <= 0.001) {
+        autoLaunchRemaining = 0;
+        tryLaunch();
+      } else {
+        autoLaunchRemaining = delay;
+      }
+    }
+  },
   onTargetPatternChange: (pattern) => {
     targetPhysics.setPattern(pattern);
     if (!missilePhysics.isLaunched) {
@@ -152,12 +193,34 @@ const controls = new Controls({
       );
       missileModel.update(missilePhysics, overlays, 0, cameraManager.mode, telemetry, camera);
       targetModel.update(targetPhysics, overlays, 0, camera);
+
+      const autoCfg = controls.getAutoLaunchConfig();
+      if (autoCfg.enabled) {
+        if (autoCfg.delay <= 0.001) {
+          autoLaunchRemaining = 0;
+          tryLaunch();
+        } else {
+          autoLaunchRemaining = autoCfg.delay;
+        }
+      } else {
+        autoLaunchRemaining = null;
+      }
     }
   }
 });
 
 // Load saved settings (camera mode, speeds, trajectories, overlays)
 controls.loadSettings();
+
+const initialAutoCfg = controls.getAutoLaunchConfig();
+if (initialAutoCfg.enabled && !missilePhysics.isLaunched) {
+  if (initialAutoCfg.delay <= 0.001) {
+    autoLaunchRemaining = 0;
+    tryLaunch();
+  } else {
+    autoLaunchRemaining = initialAutoCfg.delay;
+  }
+}
 
 /* ─── Resize Handler ──────────────────────────────────────────────── */
 window.addEventListener('resize', () => {
@@ -246,9 +309,21 @@ function animate(now) {
   trajectoryManager.update(camera);
   missileModel.updateExplosion(delta);
 
+  // Handle Auto Launch countdown
+  if (!isPaused && !missilePhysics.isLaunched && typeof autoLaunchRemaining === 'number') {
+    if (autoLaunchRemaining <= 0.001) {
+      tryLaunch();
+    } else {
+      autoLaunchRemaining = Math.max(0, autoLaunchRemaining - delta);
+      if (autoLaunchRemaining <= 0.001) {
+        tryLaunch();
+      }
+    }
+  }
+
   // Update Telemetry Panel HUD & Controls State
   telemetryPanel.update(missilePhysics, targetPhysics, telemetry);
-  controls.updateLaunchButton(missilePhysics.isLaunched, telemetry);
+  controls.updateLaunchButton(missilePhysics.isLaunched, telemetry, autoLaunchRemaining);
 
   // Render WebGL Scene
   renderer.render(scene, camera);

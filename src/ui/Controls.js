@@ -38,6 +38,11 @@ export class Controls {
     this.toggleAeroLimit = document.getElementById('toggle-aero-limit');
     this.toggleLobl = document.getElementById('toggle-lobl');
 
+    // Automation
+    this.toggleAutoLaunch = document.getElementById('toggle-auto-launch');
+    this.autoLaunchDelayInput = document.getElementById('auto-launch-delay');
+    this.valAutoLaunchDelay = document.getElementById('val-auto-launch-delay');
+
     // Overlays
     this.toggleLos = document.getElementById('toggle-los');
     this.toggleAccel = document.getElementById('toggle-accel');
@@ -56,6 +61,8 @@ export class Controls {
         gLimit: parseFloat(this.gLimitInput.value),
         aeroLimit: this.toggleAeroLimit ? this.toggleAeroLimit.checked : false,
         loblMode: this.toggleLobl ? this.toggleLobl.checked : true,
+        autoLaunch: this.toggleAutoLaunch ? this.toggleAutoLaunch.checked : false,
+        autoLaunchDelay: this.autoLaunchDelayInput ? parseFloat(this.autoLaunchDelayInput.value) : 2.0,
         cameraMode: this.cameraSelect ? this.cameraSelect.value : 'free',
         showLOS: this.toggleLos.checked,
         showAccel: this.toggleAccel.checked,
@@ -122,7 +129,18 @@ export class Controls {
         if (this.callbacks.onLOBLChange) this.callbacks.onLOBLChange(settings.loblMode);
       }
 
-      // 8. Camera Mode
+      // 8. Auto Launch after Reset
+      if (typeof settings.autoLaunch === 'boolean' && this.toggleAutoLaunch) {
+        this.toggleAutoLaunch.checked = settings.autoLaunch;
+        if (this.callbacks.onAutoLaunchChange) this.callbacks.onAutoLaunchChange(settings.autoLaunch);
+      }
+      if (typeof settings.autoLaunchDelay === 'number' && !isNaN(settings.autoLaunchDelay) && this.autoLaunchDelayInput) {
+        this.autoLaunchDelayInput.value = settings.autoLaunchDelay;
+        if (this.valAutoLaunchDelay) this.valAutoLaunchDelay.textContent = settings.autoLaunchDelay.toFixed(1);
+        if (this.callbacks.onAutoLaunchDelayChange) this.callbacks.onAutoLaunchDelayChange(settings.autoLaunchDelay);
+      }
+
+      // 9. Camera Mode
       if (settings.cameraMode && this.cameraSelect) {
         this.cameraSelect.value = settings.cameraMode;
         if (this.cameraHint) {
@@ -131,7 +149,7 @@ export class Controls {
         if (this.callbacks.onCameraChange) this.callbacks.onCameraChange(settings.cameraMode);
       }
 
-      // 9. Visual Overlays
+      // 10. Visual Overlays
       if (typeof settings.showLOS === 'boolean') this.toggleLos.checked = settings.showLOS;
       if (typeof settings.showAccel === 'boolean') this.toggleAccel.checked = settings.showAccel;
       if (typeof settings.showVel === 'boolean') this.toggleVel.checked = settings.showVel;
@@ -242,6 +260,22 @@ export class Controls {
       });
     }
 
+    if (this.toggleAutoLaunch) {
+      this.toggleAutoLaunch.addEventListener('change', (e) => {
+        this.saveSettings();
+        if (this.callbacks.onAutoLaunchChange) this.callbacks.onAutoLaunchChange(e.target.checked);
+      });
+    }
+
+    if (this.autoLaunchDelayInput) {
+      this.autoLaunchDelayInput.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (this.valAutoLaunchDelay) this.valAutoLaunchDelay.textContent = val.toFixed(1);
+        this.saveSettings();
+        if (this.callbacks.onAutoLaunchDelayChange) this.callbacks.onAutoLaunchDelayChange(val);
+      });
+    }
+
     // Overlay checkboxes
     [this.toggleLos, this.toggleAccel, this.toggleVel, this.toggleTrails, this.toggleSeekerFov].forEach((chk) => {
       if (chk) {
@@ -252,13 +286,21 @@ export class Controls {
     });
   }
 
-  updateLaunchButton(isLaunched, telemetry) {
+  updateLaunchButton(isLaunched, telemetry, autoLaunchRemaining = null) {
     if (isLaunched) {
       this.btnLaunch.textContent = '🚀 In Flight';
       this.btnLaunch.classList.remove('btn-no-lock');
     } else {
       const isLoblBlocked = telemetry && telemetry.loblEnabled && !telemetry.inSeekerFOV;
-      if (isLoblBlocked) {
+      if (typeof autoLaunchRemaining === 'number' && autoLaunchRemaining > 0) {
+        if (isLoblBlocked) {
+          this.btnLaunch.textContent = `🔒 Auto in ${autoLaunchRemaining.toFixed(1)}s (No Lock)`;
+          this.btnLaunch.classList.add('btn-no-lock');
+        } else {
+          this.btnLaunch.textContent = `⏱️ Launch in ${autoLaunchRemaining.toFixed(1)}s`;
+          this.btnLaunch.classList.remove('btn-no-lock');
+        }
+      } else if (isLoblBlocked) {
         this.btnLaunch.textContent = '🔒 No Lock (Out of FOV)';
         this.btnLaunch.classList.add('btn-no-lock');
       } else {
@@ -266,6 +308,13 @@ export class Controls {
         this.btnLaunch.classList.remove('btn-no-lock');
       }
     }
+  }
+
+  getAutoLaunchConfig() {
+    return {
+      enabled: this.toggleAutoLaunch ? this.toggleAutoLaunch.checked : false,
+      delay: this.autoLaunchDelayInput ? parseFloat(this.autoLaunchDelayInput.value) : 2.0
+    };
   }
 
   getOverlayConfig() {
