@@ -64,7 +64,30 @@ where:
 * $\mathbf{u}_m = \mathbf{v}_m / \|\mathbf{v}_m\|$ is the missile forward velocity unit vector.
 * $\|\mathbf{a}_c\| \le a_{\max} = 30\text{ G}$ ($294.3\text{ m/s}^2$).
 
-### 3. Proximity Fuze Warhead Lethality
+### 3. Sensor Observability & Real-world Seeker Physics
+In simulation environments, the engine computes $\boldsymbol{\omega}_{los}$ and $V_c$ using ground-truth positions ($\mathbf{r}_t, \mathbf{r}_m$) and velocities ($\mathbf{v}_t, \mathbf{v}_m$). In real-world combat, the interceptor **does not know and has no need for** the target's absolute coordinate or ground speed:
+
+* **Closing Velocity ($V_c = -\dot{R}$)**: Directly measured by the active/semi-active RF seeker via **Doppler frequency shift** of the reflected echo:
+  $$\Delta f_d = \frac{2 V_c}{\lambda} = \frac{2 f_0 V_c}{c}$$
+  eliminating the need to know the target's independent airspeed or heading.
+* **LOS Angular Rate Vector ($\boldsymbol{\omega}_{los} = \dot{\boldsymbol{\lambda}}$)**: Measured directly in inertial space by the seeker's **rate gyroscopes** mounted on the gimballed antenna/optical tracker.
+* **Missile Unit Heading ($\mathbf{u}_m$)**: Measured by the onboard **Inertial Navigation System (INS / IMU)**.
+
+#### 📊 Variable Derivation: Simulation (Ground Truth) vs. Real-world Missile Hardware
+
+| Parameter / Term | Symbol | How Simulation Computes It (This Project) | How Real Missiles Obtain It (Physical Sensors) |
+| :--- | :---: | :--- | :--- |
+| **Navigation Gain** | $N$ | Preset UI slider parameter ($N = 2.0 \sim 6.0$, default $4.0$) | Hardcoded / scheduled in missile Guidance Computer (GCU, $N = 3 \sim 5$) |
+| **Closing Velocity** | $V_c$ | Calculated from ground-truth states:<br>$V_c = - \frac{(\mathbf{r}_t - \mathbf{r}_m) \cdot (\mathbf{v}_t - \mathbf{v}_m)}{\|\mathbf{r}_t - \mathbf{r}_m\|}$ | **Doppler Frequency Shift** measured by radar seeker:<br>$\Delta f_d = \frac{2 V_c}{\lambda}$ (or pulse radar range-rate $\Delta R / \Delta t$) |
+| **LOS Angular Rate** | $\boldsymbol{\omega}_{los}$ | Calculated from vector kinematics:<br>$\boldsymbol{\omega}_{los} = \frac{\mathbf{r} \times \mathbf{v}_r}{R^2}$ | Directly measured in inertial space by **Rate Gyroscopes** on the gimballed seeker antenna, or optical seeker angle-rate + IMU ($\boldsymbol{\omega}_{\text{body}} + \dot{\boldsymbol{\theta}}_{\text{pixel}}$) |
+| **Missile Heading** | $\mathbf{u}_m$ | Normalized missile velocity vector:<br>$\mathbf{u}_m = \mathbf{v}_m / \|\mathbf{v}_m\|$ | Measured by onboard **Inertial Navigation System (INS / IMU)** from missile integration |
+| **Raw Accel Command** | $\mathbf{a}_c$ ($\mathbf{a}_{cmd}$) | Vector formula in `VectorMath.js`:<br>$\mathbf{a}_c = N \cdot V_c \cdot (\boldsymbol{\omega}_{los} \times \mathbf{u}_m)$ | Computed by Guidance Computer (GCU / DSP) combining seeker signals ($V_c, \boldsymbol{\omega}_{los}$) and INS ($\mathbf{u}_m$) |
+| **G-Limit Saturation** | $a_{\max}, \mathbf{a}_m$ | Vector magnitude clamped by `maxAccelG * G0` with dynamic pressure $q$-scaling | Physical aerodynamic lift limit ($L_{\max} = \frac{1}{2}\rho V^2 S C_{L,\max}$) and control fin mechanical limit |
+| **Target State** | $\mathbf{r}_t, \mathbf{v}_t$ | Directly known from simulation engine (tagged as `[GOD]` in HUD) | **Unknown & Unneeded** — PN guidance achieves intercept purely through relative observables |
+
+Because Proportional Navigation relies exclusively on these locally observable quantities, it operates entirely self-contained without requiring target GPS coordinates or external datalinks.
+
+### 4. Proximity Fuze Warhead Lethality
 Unlike kinetic hit-to-kill systems, air defense missiles utilize active laser/RF proximity fuzes detonating at $R \le 12\text{ m}$:
 
 $$P_k = 1 - \exp\left(-\frac{N_f \cdot A_t}{4\pi R^2}\right)$$

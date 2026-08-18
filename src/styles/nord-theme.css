@@ -251,6 +251,10 @@ canvas {
   z-index: 20;
   padding: 0.85rem 1rem;
   pointer-events: none;
+  background: rgba(46, 52, 64, 0.68);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(76, 86, 106, 0.6);
 }
 
 .hud-header {
@@ -330,19 +334,20 @@ canvas {
 
 .vec-limit {
   fill: none;
-  stroke: var(--nord3);
-  stroke-width: 1;
+  stroke: var(--nord6);
+  stroke-width: 1.2;
   stroke-dasharray: 3 3;
+  opacity: 0.85;
 }
 
 .vec-axis {
-  stroke: var(--nord3);
-  stroke-width: 0.8;
-  opacity: 0.65;
+  stroke: var(--nord4);
+  stroke-width: 0.9;
+  opacity: 0.75;
 }
 
 .vec-tick {
-  fill: var(--nord3);
+  fill: var(--nord6);
   font-size: 11px;
   font-weight: 700;
   text-anchor: middle;

@@ -103,6 +103,7 @@ export class PNController {
 
     // 6. Apply the flight-condition dependent saturation limit (a_m)
     const missileSpeed = missileVel.length();
+    const u_m = missileSpeed > 1e-5 ? missileVel.clone().normalize() : new THREE.Vector3(0, 0, 0);
     const maxAccelG = this.effectiveMaxAccelG(missilePos.y, missileSpeed);
     const maxAccelMag = maxAccelG * G0;
     const appliedAccel = cmdAccel.clone().clampLength(0, maxAccelMag);
@@ -115,6 +116,7 @@ export class PNController {
     return {
       losVector,
       u_los,
+      u_m,
       relVel,
       range,
       Vc,
