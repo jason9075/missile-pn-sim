@@ -89,6 +89,7 @@ export class Target {
     this.maxTrailLength = 700;
     this.time = 0;
     this.isHit = false;
+    this.isMissed = false;
 
     this.reset();
   }
@@ -119,6 +120,7 @@ export class Target {
     this.trail = [this.position.clone()];
     this.time = 0;
     this.isHit = false;
+    this.isMissed = false;
     this.updateVelocity(0);
   }
 
@@ -129,8 +131,8 @@ export class Target {
   }
 
   update(dt) {
-    // If target has been intercepted and destroyed, freeze position in the air
-    if (this.isHit) return;
+    // If target has been intercepted or missile missed, freeze target in place
+    if (this.isHit || this.isMissed) return;
 
     this.updateVelocity(dt);
     this.position.addScaledVector(this.velocity, dt);

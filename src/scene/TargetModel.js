@@ -328,7 +328,7 @@ export class TargetModel {
     this.scene.add(this.velArrow);
   }
 
-  update(targetPhysics, overlaysConfig, delta = 0.016) {
+  update(targetPhysics, overlaysConfig, delta = 0.016, camera = null) {
     // 1. Check hit status and switch visual mesh material
     if (targetPhysics.isHit) {
       this.setHitVisualState(true);
@@ -345,19 +345,19 @@ export class TargetModel {
       this.group.quaternion.copy(q);
     }
 
-    // 3. Pusher Propeller Spin Animation (only spins when active/unhit)
-    if (!targetPhysics.isHit && this.propellerGroup) {
+    // 3. Pusher Propeller Spin Animation (only spins when active/unhit and not missed)
+    if (!targetPhysics.isHit && !targetPhysics.isMissed && this.propellerGroup) {
       this.propellerRotation += delta * 60.0;
       this.propellerGroup.rotation.z = this.propellerRotation;
     }
 
     // 4. Trail
     if (this.ribbonTrail) {
-      this.ribbonTrail.update(targetPhysics.trail, overlaysConfig && overlaysConfig.showTrails);
+      this.ribbonTrail.update(targetPhysics.trail, overlaysConfig && overlaysConfig.showTrails, camera);
     }
 
     // 5. Velocity Overlay Arrow
-    if (overlaysConfig && overlaysConfig.showVel && !targetPhysics.isHit && targetPhysics.velocity.lengthSq() > 1e-3) {
+    if (overlaysConfig && overlaysConfig.showVel && !targetPhysics.isHit && !targetPhysics.isMissed && targetPhysics.velocity.lengthSq() > 1e-3) {
       this.velArrow.visible = true;
       this.velArrow.position.copy(targetPhysics.position);
       const dir = targetPhysics.velocity.clone().normalize();

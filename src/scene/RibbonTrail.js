@@ -36,7 +36,7 @@ export class RibbonTrail {
     this.scene.add(this.mesh);
   }
 
-  update(points, isVisible = true) {
+  update(points, isVisible = true, camera = null) {
     if (isVisible !== true || !points || points.length < 2) {
       this.mesh.visible = false;
       this.geometry.setDrawRange(0, 0);
@@ -48,9 +48,11 @@ export class RibbonTrail {
     const posAttr = this.geometry.attributes.position;
     const posArray = posAttr.array;
 
+    const camPos = camera ? camera.position : null;
     const up = new THREE.Vector3(0, 1, 0);
     const tangent = new THREE.Vector3();
     const side = new THREE.Vector3();
+    const vCam = new THREE.Vector3();
 
     for (let i = 0; i < count; i++) {
       const curr = points[i];
@@ -65,11 +67,37 @@ export class RibbonTrail {
         tangent.normalize();
       }
 
-      side.crossVectors(tangent, up);
-      if (side.lengthSq() < 1e-4) {
-        side.crossVectors(tangent, new THREE.Vector3(1, 0, 0));
+      let halfWidth = this.width * 0.5;
+
+      if (camPos) {
+        vCam.subVectors(camPos, curr);
+        const dist = vCam.length();
+        // Camera distance adaptive scaling: maintain visibility at long ranges while looking natural up close
+        const dynamicWidth = Math.min(Math.max(this.width + dist * 0.008, this.width), 45.0);
+        halfWidth = dynamicWidth * 0.5;
+
+        // Camera billboard side vector: perpendicular to tangent and camera view ray
+        if (dist > 1e-3) {
+          vCam.divideScalar(dist);
+          side.crossVectors(tangent, vCam);
+        } else {
+          side.crossVectors(tangent, up);
+        }
+
+        if (side.lengthSq() < 1e-4) {
+          side.crossVectors(tangent, up);
+          if (side.lengthSq() < 1e-4) {
+            side.crossVectors(tangent, new THREE.Vector3(1, 0, 0));
+          }
+        }
+      } else {
+        side.crossVectors(tangent, up);
+        if (side.lengthSq() < 1e-4) {
+          side.crossVectors(tangent, new THREE.Vector3(1, 0, 0));
+        }
       }
-      side.normalize().multiplyScalar(this.width * 0.5);
+
+      side.normalize().multiplyScalar(halfWidth);
 
       const idx = i * 6;
       // Left vertex
@@ -85,5 +113,17 @@ export class RibbonTrail {
 
     posAttr.needsUpdate = true;
     this.geometry.setDrawRange(0, (count - 1) * 6);
+  }
+
+  dispose() {
+    if (this.mesh && this.mesh.parent) {
+      this.mesh.parent.remove(this.mesh);
+    }
+    if (this.geometry) {
+      this.geometry.dispose();
+    }
+    if (this.material) {
+      this.material.dispose();
+    }
   }
 }

@@ -16,6 +16,7 @@
     <button id="btn-pause" class="btn" type="button">⏸ Pause</button>
     <button id="btn-step" class="btn" type="button" title="Advance by 1 frame (1/60s)">⏭ Step Once</button>
     <button id="btn-reset" class="btn" type="button">🔄 Reset</button>
+    <button id="btn-save-path" class="btn" type="button" title="Save current trajectory run to history list">💾 Save</button>
     <div class="toolbar-divider"></div>
     <label for="camera-select">Camera</label>
     <select id="camera-select">
@@ -26,6 +27,20 @@
     </select>
     <button id="btn-open-sidebar" class="btn icon-button" type="button" title="Simulation Settings">⚙️</button>
     <button id="open-math" class="btn icon-button" type="button" aria-haspopup="dialog" aria-controls="math-modal" aria-label="Explain the math">💡</button>
+  </div>
+
+  <!-- Top-Left Trajectory Path Management Panel -->
+  <div id="path-panel" class="glass-panel">
+    <div class="panel-header path-header">
+      <span class="hud-title">TRAJECTORIES (<span id="path-count">0</span>)</span>
+      <div class="header-actions">
+        <button id="btn-clear-paths" class="btn-text-danger" type="button" title="Clear all saved trajectories" style="display: none;">Clear All</button>
+        <button id="btn-toggle-path-panel" class="btn-collapse" type="button" title="Toggle Trajectories Panel" aria-expanded="true">▼</button>
+      </div>
+    </div>
+    <div id="path-list" class="path-list-body">
+      <div class="path-empty-hint">No saved trajectories.<br/>Click "💾 Save" to save a run.</div>
+    </div>
   </div>
 
   <!-- Simulation Parameters Sidebar Panel -->
@@ -99,10 +114,13 @@
   <!-- Telemetry HUD Panel -->
   <div id="telemetry-panel" class="glass-panel">
     <div class="hud-header">
-      <span class="hud-title">REALTIME TELEMETRY</span>
-      <span id="hud-status" class="hud-badge status-standby">STANDBY</span>
+      <div class="hud-header-left">
+        <span class="hud-title">REALTIME TELEMETRY</span>
+        <span id="hud-status" class="hud-badge status-standby">STANDBY</span>
+      </div>
+      <button id="btn-toggle-telemetry" class="btn-collapse" type="button" title="Toggle Telemetry HUD" aria-expanded="true">▼</button>
     </div>
-    <div class="hud-grid">
+    <div id="telemetry-body" class="hud-grid">
       <div class="hud-item">
         <span class="hud-label">Flight Time (T)</span>
         <span id="tel-time" class="hud-value">0.00 s</span>

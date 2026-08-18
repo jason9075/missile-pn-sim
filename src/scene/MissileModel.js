@@ -352,7 +352,7 @@ export class MissileModel {
     }
   }
 
-  update(missilePhysics, overlaysConfig, delta = 0.016, cameraMode = 'free', telemetry = null) {
+  update(missilePhysics, overlaysConfig, delta = 0.016, cameraMode = 'free', telemetry = null, camera = null) {
     // 1. Check hit status and switch visual mesh material
     if (missilePhysics.isHit) {
       this.setHitVisualState(true);
@@ -383,7 +383,7 @@ export class MissileModel {
 
     // 2. Update Trail
     if (this.ribbonTrail) {
-      this.ribbonTrail.update(missilePhysics.trail, !!(overlaysConfig && overlaysConfig.showTrails));
+      this.ribbonTrail.update(missilePhysics.trail, !!(overlaysConfig && overlaysConfig.showTrails), camera);
     }
 
     // 3. Update Vector Overlays

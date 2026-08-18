@@ -5,6 +5,7 @@ import { Environment } from './scene/Environment.js';
 import { MissileModel } from './scene/MissileModel.js';
 import { TargetModel } from './scene/TargetModel.js';
 import { CameraManager } from './scene/CameraManager.js';
+import { TrajectoryManager } from './scene/TrajectoryManager.js';
 
 import { Missile } from './physics/Missile.js';
 import { Target } from './physics/Target.js';
@@ -13,6 +14,7 @@ import { PNController } from './physics/PNController.js';
 import { TelemetryPanel } from './ui/TelemetryPanel.js';
 import { Controls } from './ui/Controls.js';
 import { MathModal } from './ui/MathModal.js';
+import { PathListPanel } from './ui/PathListPanel.js';
 
 /* ─── WebGL Setup ─────────────────────────────────────────────────── */
 const canvas = document.getElementById('canvas');
@@ -30,6 +32,7 @@ const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerH
 /* ─── Modules Initialization ───────────────────────────────────────── */
 const environment = new Environment(scene);
 const cameraManager = new CameraManager(camera, renderer.domElement);
+const trajectoryManager = new TrajectoryManager(scene);
 
 const missilePhysics = new Missile({ initialPosition: new THREE.Vector3(0.7, 31.9, -0.45), speed: 400 });
 const targetPhysics = new Target({ pattern: 'coastal-crossing' });
@@ -40,6 +43,20 @@ const targetModel = new TargetModel(scene);
 
 const telemetryPanel = new TelemetryPanel();
 const mathModal = new MathModal();
+const pathListPanel = new PathListPanel({
+  onToggleVisibility: (id) => {
+    trajectoryManager.toggleVisibility(id);
+    pathListPanel.render(trajectoryManager.getTrajectories());
+  },
+  onDelete: (id) => {
+    trajectoryManager.removeTrajectory(id);
+    pathListPanel.render(trajectoryManager.getTrajectories());
+  },
+  onClearAll: () => {
+    trajectoryManager.clearAll();
+    pathListPanel.render(trajectoryManager.getTrajectories());
+  }
+});
 
 /* ─── State ───────────────────────────────────────────────────────── */
 let isPaused = false;
@@ -80,6 +97,26 @@ const controls = new Controls({
     cameraManager.resetOrbit();
     isPaused = false;
   },
+  onSavePath: () => {
+    if (!missilePhysics.trail || missilePhysics.trail.length < 2) {
+      telemetryPanel.flashWarning('NO FLIGHT PATH TO SAVE');
+      return;
+    }
+
+    const meta = {
+      flightTime: missilePhysics.flightTime,
+      isHit: missilePhysics.isHit,
+      isMissed: missilePhysics.isMissed,
+      navGain: pnController.N,
+      missileSpeed: missilePhysics.speed,
+      targetPattern: targetPhysics.pattern
+    };
+
+    const saved = trajectoryManager.addTrajectory(missilePhysics.trail, meta);
+    if (saved) {
+      pathListPanel.render(trajectoryManager.getTrajectories());
+    }
+  },
   onCameraChange: (mode) => {
     cameraManager.setMode(mode);
   },
@@ -113,8 +150,8 @@ const controls = new Controls({
         targetPhysics.position,
         targetPhysics.velocity
       );
-      missileModel.update(missilePhysics, overlays, 0, cameraManager.mode, telemetry);
-      targetModel.update(targetPhysics, overlays, 0);
+      missileModel.update(missilePhysics, overlays, 0, cameraManager.mode, telemetry, camera);
+      targetModel.update(targetPhysics, overlays, 0, camera);
     }
   }
 });
@@ -133,7 +170,17 @@ window.addEventListener('resize', () => {
 
 /* ─── Physics Simulation Step ─────────────────────────────────────── */
 function simulateStep(dt) {
-  // 1. Update Target Position & Velocity (if not intercepted)
+  // If missile has already completed engagement (hit or missed), freeze physics update
+  if (missilePhysics.isHit || missilePhysics.isMissed) {
+    return pnController.calculateGuidance(
+      missilePhysics.position,
+      missilePhysics.velocity,
+      targetPhysics.position,
+      targetPhysics.velocity
+    );
+  }
+
+  // 1. Update Target Position & Velocity
   targetPhysics.update(dt);
 
   // 2. Calculate PN Guidance Law Command
@@ -147,13 +194,15 @@ function simulateStep(dt) {
   // 3. Update Missile Physics
   missilePhysics.update(dt, telemetry.appliedAccel, targetPhysics.position);
 
-  // Trigger explosion & target destruction on hit
+  // Handle Hit or Miss outcomes
   if (missilePhysics.isHit) {
     targetPhysics.isHit = true;
     if (!missileModel.explosionTriggered) {
       missileModel.triggerExplosion(targetPhysics.position);
       missileModel.explosionTriggered = true;
     }
+  } else if (missilePhysics.isMissed) {
+    targetPhysics.isMissed = true;
   }
 
   // Return calculation for UI & visualization update
@@ -185,16 +234,17 @@ function animate(now) {
     );
   }
 
-  // Update 3D visual models, environment, and overlays
-  const overlays = controls.getOverlayConfig();
-  environment.update(delta);
-  missileModel.update(missilePhysics, overlays, delta, cameraManager.mode, telemetry);
-  missileModel.updateLOS(missilePhysics.position, targetPhysics.position, overlays.showLOS);
-  targetModel.update(targetPhysics, overlays, delta);
-  missileModel.updateExplosion(delta);
-
   // Update camera perspective
   cameraManager.update(missilePhysics, targetPhysics, delta);
+
+  // Update 3D visual models, environment, overlays, and historical trajectories
+  const overlays = controls.getOverlayConfig();
+  environment.update(delta);
+  missileModel.update(missilePhysics, overlays, delta, cameraManager.mode, telemetry, camera);
+  missileModel.updateLOS(missilePhysics.position, targetPhysics.position, overlays.showLOS);
+  targetModel.update(targetPhysics, overlays, delta, camera);
+  trajectoryManager.update(camera);
+  missileModel.updateExplosion(delta);
 
   // Update Telemetry Panel HUD & Controls State
   telemetryPanel.update(missilePhysics, targetPhysics, telemetry);

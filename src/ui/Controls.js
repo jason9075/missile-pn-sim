@@ -12,6 +12,7 @@ export class Controls {
     this.btnPause = document.getElementById('btn-pause');
     this.btnStep = document.getElementById('btn-step');
     this.btnReset = document.getElementById('btn-reset');
+    this.btnSavePath = document.getElementById('btn-save-path');
     this.cameraSelect = document.getElementById('camera-select');
     this.cameraHint = document.getElementById('camera-hint');
     
@@ -165,6 +166,12 @@ export class Controls {
       if (this.callbacks.onReset) this.callbacks.onReset();
       this.btnPause.textContent = '⏸ Pause';
     });
+
+    if (this.btnSavePath) {
+      this.btnSavePath.addEventListener('click', () => {
+        if (this.callbacks.onSavePath) this.callbacks.onSavePath();
+      });
+    }
 
     // Target Trajectory change in Simulation Settings panel
     if (this.targetPatternSelect) {

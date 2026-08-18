@@ -20,6 +20,16 @@ export class TelemetryPanel {
     this.elGLimit = document.getElementById('tel-g-limit');
     this.elStatus = document.getElementById('hud-status');
     this._warningTimeout = null;
+
+    this.panel = document.getElementById('telemetry-panel');
+    this.btnToggle = document.getElementById('btn-toggle-telemetry');
+    if (this.btnToggle && this.panel) {
+      this.btnToggle.addEventListener('click', () => {
+        const isCollapsed = this.panel.classList.toggle('panel-collapsed');
+        this.btnToggle.setAttribute('aria-expanded', !isCollapsed);
+        this.btnToggle.textContent = isCollapsed ? '▶' : '▼';
+      });
+    }
   }
 
   flashWarning(message = 'LOBL INHIBITED (NO LOCK)') {
