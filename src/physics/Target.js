@@ -10,18 +10,20 @@ import { LAUNCH_AZIMUTH } from './Missile.js';
  * BEAM_CROSSING_TRACK below) makes the track perpendicular to the fixed rail as
  * well, so it reads as a clean right-angle crossing when viewed from above.
  *
- * Spawning the target *at* that point opens the engagement already at closest
- * approach; a smaller `spawnAspectDeg` backs it up along the track instead.
- * Along a straight track sin(aspect) = d / R, hence:
+ * Spawning the target *on* that point opens the engagement already at closest
+ * approach; `spawnOffset` backs it up along the heading instead, so the run
+ * begins while the threat is still closing. Only the spawn moves — the heading
+ * is fixed by the beam point, so the right angle to the rail is preserved.
  *
- *   R_spawn = d / sin(aspect),   backward offset = d / tan(aspect)
+ * To think in aspect angle rather than metres: offset = d / tan(aspect), where
+ * d is the beam range. 0 m is a 90° aspect, d/tan(60°) a 60° aspect, and so on.
  *
  * @param {THREE.Vector3} beamPoint - closest approach point of the track
- * @param {number} spawnAspectDeg - aspect angle at spawn (90 = spawn on the beam point)
+ * @param {number} spawnOffset - metres upstream of the beam point (0 = spawn on it)
  * @param {number} [side=1] - +1 or -1 to pick which way it crosses
  * @returns {{initialPosition: THREE.Vector3, direction: THREE.Vector3}}
  */
-function beamCrossingTrack(beamPoint, spawnAspectDeg, side = 1) {
+function beamCrossingTrack(beamPoint, spawnOffset, side = 1) {
   const psi = Math.atan2(beamPoint.x, -beamPoint.z);
   const direction = new THREE.Vector3(
     side * Math.cos(psi),
@@ -29,9 +31,7 @@ function beamCrossingTrack(beamPoint, spawnAspectDeg, side = 1) {
     side * Math.sin(psi)
   ).normalize();
 
-  const beamRange = Math.hypot(beamPoint.x, beamPoint.z);
-  const offset = beamRange / Math.tan(spawnAspectDeg * (Math.PI / 180));
-  const initialPosition = beamPoint.clone().addScaledVector(direction, -offset);
+  const initialPosition = beamPoint.clone().addScaledVector(direction, -spawnOffset);
 
   return { initialPosition, direction };
 }
@@ -41,6 +41,7 @@ function beamCrossingTrack(beamPoint, spawnAspectDeg, side = 1) {
  * hardcoded — move the rail and the corridor follows it. */
 const BEAM_CROSSING_RANGE = 1575; // m, horizontal distance at closest approach
 const BEAM_CROSSING_ALTITUDE = 560; // m
+const BEAM_CROSSING_SPAWN_OFFSET = 600; // m upstream, giving a run-in to the beam point
 
 const BEAM_CROSSING_TRACK = beamCrossingTrack(
   new THREE.Vector3(
@@ -48,7 +49,7 @@ const BEAM_CROSSING_TRACK = beamCrossingTrack(
     BEAM_CROSSING_ALTITUDE,
     -BEAM_CROSSING_RANGE * Math.cos(LAUNCH_AZIMUTH)
   ),
-  90, // spawn on the beam point
+  BEAM_CROSSING_SPAWN_OFFSET,
   -1
 );
 
