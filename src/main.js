@@ -48,9 +48,22 @@ let stepRequested = false;
 /* ─── Controls Callback Handler ────────────────────────────────────── */
 const controls = new Controls({
   onLaunch: () => {
-    if (!missilePhysics.isLaunched) {
-      missilePhysics.launch();
+    if (missilePhysics.isLaunched) return;
+
+    // Check LOBL launch constraint
+    const currentTelemetry = pnController.calculateGuidance(
+      missilePhysics.position,
+      missilePhysics.velocity,
+      targetPhysics.position,
+      targetPhysics.velocity
+    );
+
+    if (currentTelemetry.loblEnabled && !currentTelemetry.inSeekerFOV) {
+      telemetryPanel.flashWarning('LOBL INHIBITED (NO LOCK)');
+      return;
     }
+
+    missilePhysics.launch();
   },
   onTogglePause: () => {
     isPaused = !isPaused;
@@ -85,13 +98,22 @@ const controls = new Controls({
   onAeroLimitChange: (enabled) => {
     pnController.setAeroLimitEnabled(enabled);
   },
+  onLOBLChange: (enabled) => {
+    pnController.setLOBLEnabled(enabled);
+  },
   onTargetPatternChange: (pattern) => {
     targetPhysics.setPattern(pattern);
     if (!missilePhysics.isLaunched) {
       targetPhysics.reset();
       missilePhysics.reset(new THREE.Vector3(0.7, 31.9, -0.45));
-      const overlays = (typeof controls !== 'undefined' && controls) ? controls.getOverlayConfig() : { showLOS: true, showAccel: false, showVel: false, showTrails: true };
-      missileModel.update(missilePhysics, overlays, 0, cameraManager.mode);
+      const overlays = (typeof controls !== 'undefined' && controls) ? controls.getOverlayConfig() : { showLOS: true, showAccel: false, showVel: false, showTrails: true, showSeekerFOV: false };
+      const telemetry = pnController.calculateGuidance(
+        missilePhysics.position,
+        missilePhysics.velocity,
+        targetPhysics.position,
+        targetPhysics.velocity
+      );
+      missileModel.update(missilePhysics, overlays, 0, cameraManager.mode, telemetry);
       targetModel.update(targetPhysics, overlays, 0);
     }
   }
@@ -166,7 +188,7 @@ function animate(now) {
   // Update 3D visual models, environment, and overlays
   const overlays = controls.getOverlayConfig();
   environment.update(delta);
-  missileModel.update(missilePhysics, overlays, delta, cameraManager.mode);
+  missileModel.update(missilePhysics, overlays, delta, cameraManager.mode, telemetry);
   missileModel.updateLOS(missilePhysics.position, targetPhysics.position, overlays.showLOS);
   targetModel.update(targetPhysics, overlays, delta);
   missileModel.updateExplosion(delta);
@@ -174,8 +196,9 @@ function animate(now) {
   // Update camera perspective
   cameraManager.update(missilePhysics, targetPhysics, delta);
 
-  // Update Telemetry Panel HUD
+  // Update Telemetry Panel HUD & Controls State
   telemetryPanel.update(missilePhysics, targetPhysics, telemetry);
+  controls.updateLaunchButton(missilePhysics.isLaunched, telemetry);
 
   // Render WebGL Scene
   renderer.render(scene, camera);

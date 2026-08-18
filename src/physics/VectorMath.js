@@ -93,4 +93,22 @@ export class VectorMath {
     const el = Math.asin(Math.max(-1, Math.min(1, vec.y / len))) * (180 / Math.PI);
     return { azimuth: az, elevation: el };
   }
+
+  /**
+   * Computes seeker look angle (off-boresight angle / gimbal angle) eta in degrees
+   * eta = arccos(u_m . u_los)
+   * @param {THREE.Vector3} missileVel - Missile velocity vector
+   * @param {THREE.Vector3} losVector - Line of sight vector (r_t - r_m)
+   * @returns {number} Look angle in degrees [0, 180]
+   */
+  static computeLookAngle(missileVel, losVector) {
+    const speed = missileVel.length();
+    const range = losVector.length();
+    if (speed < 1e-5 || range < 1e-5) return 0;
+    const u_m = missileVel.clone().divideScalar(speed);
+    const u_los = losVector.clone().divideScalar(range);
+    const dot = Math.max(-1, Math.min(1, u_m.dot(u_los)));
+    return Math.acos(dot) * (180 / Math.PI);
+  }
 }
+

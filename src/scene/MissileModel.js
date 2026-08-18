@@ -11,6 +11,7 @@ export class MissileModel {
     this.initMesh();
     this.initTrail();
     this.initVectors();
+    this.initSeekerFOV();
     this.initExplosion();
     
     this.scene.add(this.group);
@@ -175,6 +176,92 @@ export class MissileModel {
     this.scene.add(this.vectorGroup);
   }
 
+  initSeekerFOV() {
+    this.seekerGroup = new THREE.Group();
+
+    // Seeker visual cone parameters (40° half-angle, 350m range)
+    const fovHalfAngleDeg = 40.0;
+    const fovHalfAngleRad = THREE.MathUtils.degToRad(fovHalfAngleDeg);
+    const range = 350.0;
+    const baseRadius = range * Math.tan(fovHalfAngleRad);
+
+    // 1. Translucent search volume cone mesh
+    const coneGeo = new THREE.ConeGeometry(baseRadius, range, 32, 1, true);
+    // Origin at apex (0,0,0), base at (0,-range,0)
+    coneGeo.translate(0, -range / 2, 0);
+    // Rotate so base points along -Z and apex is at (0,0,0)
+    coneGeo.rotateX(Math.PI / 2);
+    // Offset apex to missile nose tip (0, 0, -5.0)
+    coneGeo.translate(0, 0, -5.0);
+
+    this.seekerConeMat = new THREE.MeshBasicMaterial({
+      color: 0x88C0D0, // Frost cyan (Nord8)
+      transparent: true,
+      opacity: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    this.seekerConeMesh = new THREE.Mesh(coneGeo, this.seekerConeMat);
+    this.seekerConeMesh.renderOrder = 10;
+    this.seekerGroup.add(this.seekerConeMesh);
+
+    // 2. Tactical Wireframe: Radial Ribs & Concentric Range Rings
+    const linePositions = [];
+    const noseTip = new THREE.Vector3(0, 0, -5.0);
+
+    // 8 radial generator ribs from nose to cone base
+    const numRibs = 8;
+    for (let i = 0; i < numRibs; i++) {
+      const angle = (i * Math.PI * 2) / numRibs;
+      const x = baseRadius * Math.cos(angle);
+      const y = baseRadius * Math.sin(angle);
+      const z = -5.0 - range;
+      linePositions.push(noseTip.x, noseTip.y, noseTip.z);
+      linePositions.push(x, y, z);
+    }
+
+    // 3 Range Circles (at 1/3, 2/3, and full range)
+    const ringFractions = [0.33, 0.66, 1.0];
+    const ringSegments = 48;
+    ringFractions.forEach((frac) => {
+      const ringDist = range * frac;
+      const ringRadius = ringDist * Math.tan(fovHalfAngleRad);
+      const ringZ = -5.0 - ringDist;
+
+      for (let i = 0; i < ringSegments; i++) {
+        const a1 = (i * Math.PI * 2) / ringSegments;
+        const a2 = ((i + 1) * Math.PI * 2) / ringSegments;
+        linePositions.push(
+          ringRadius * Math.cos(a1), ringRadius * Math.sin(a1), ringZ,
+          ringRadius * Math.cos(a2), ringRadius * Math.sin(a2), ringZ
+        );
+      }
+    });
+
+    // Central Boresight Axis
+    linePositions.push(noseTip.x, noseTip.y, noseTip.z);
+    linePositions.push(0, 0, -5.0 - range);
+
+    const wireGeo = new THREE.BufferGeometry();
+    wireGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+
+    this.seekerLinesMat = new THREE.LineBasicMaterial({
+      color: 0x88C0D0,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    this.seekerWireframe = new THREE.LineSegments(wireGeo, this.seekerLinesMat);
+    this.seekerWireframe.renderOrder = 11;
+    this.seekerGroup.add(this.seekerWireframe);
+
+    this.seekerGroup.visible = false;
+    this.group.add(this.seekerGroup);
+  }
+
   initExplosion() {
     const particleCount = 200;
     const geometry = new THREE.BufferGeometry();
@@ -265,7 +352,7 @@ export class MissileModel {
     }
   }
 
-  update(missilePhysics, overlaysConfig, delta = 0.016, cameraMode = 'free') {
+  update(missilePhysics, overlaysConfig, delta = 0.016, cameraMode = 'free', telemetry = null) {
     // 1. Check hit status and switch visual mesh material
     if (missilePhysics.isHit) {
       this.setHitVisualState(true);
@@ -322,7 +409,29 @@ export class MissileModel {
       this.velArrow.visible = false;
     }
 
-    // 4. Update Explosion Particles
+    // 4. Update Seeker FOV Overlay
+    if (this.seekerGroup) {
+      const showSeeker = overlaysConfig && overlaysConfig.showSeekerFOV && !missilePhysics.isHit;
+      this.seekerGroup.visible = !!showSeeker;
+
+      if (showSeeker && telemetry) {
+        if (telemetry.inSeekerFOV) {
+          // Target locked within seeker FOV - Cyan / Ice Blue (#88C0D0)
+          this.seekerConeMat.color.setHex(0x88C0D0);
+          this.seekerConeMat.opacity = 0.08;
+          this.seekerLinesMat.color.setHex(0x88C0D0);
+          this.seekerLinesMat.opacity = 0.38;
+        } else {
+          // Target outside seeker FOV (Gimbal limit exceeded) - Amber / Coral (#D08770)
+          this.seekerConeMat.color.setHex(0xD08770);
+          this.seekerConeMat.opacity = 0.06;
+          this.seekerLinesMat.color.setHex(0xD08770);
+          this.seekerLinesMat.opacity = 0.30;
+        }
+      }
+    }
+
+    // 5. Update Explosion Particles
     this.updateExplosion(delta);
   }
 

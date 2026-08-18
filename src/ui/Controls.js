@@ -31,16 +31,18 @@ export class Controls {
 
     this.targetPatternSelect = document.getElementById('target-pattern');
 
-    // Airframe Limits
+    // Airframe & Guidance Limits
     this.gLimitInput = document.getElementById('g-limit');
     this.valGLimit = document.getElementById('val-g-limit');
     this.toggleAeroLimit = document.getElementById('toggle-aero-limit');
+    this.toggleLobl = document.getElementById('toggle-lobl');
 
     // Overlays
     this.toggleLos = document.getElementById('toggle-los');
     this.toggleAccel = document.getElementById('toggle-accel');
     this.toggleVel = document.getElementById('toggle-vel');
     this.toggleTrails = document.getElementById('toggle-trails');
+    this.toggleSeekerFov = document.getElementById('toggle-seeker-fov');
   }
 
   saveSettings() {
@@ -51,12 +53,14 @@ export class Controls {
         targetSpeed: parseFloat(this.targetSpeedInput.value),
         targetPattern: this.targetPatternSelect ? this.targetPatternSelect.value : 'coastal-crossing',
         gLimit: parseFloat(this.gLimitInput.value),
-        aeroLimit: this.toggleAeroLimit.checked,
+        aeroLimit: this.toggleAeroLimit ? this.toggleAeroLimit.checked : false,
+        loblMode: this.toggleLobl ? this.toggleLobl.checked : true,
         cameraMode: this.cameraSelect ? this.cameraSelect.value : 'free',
         showLOS: this.toggleLos.checked,
         showAccel: this.toggleAccel.checked,
         showVel: this.toggleVel.checked,
-        showTrails: this.toggleTrails.checked
+        showTrails: this.toggleTrails.checked,
+        showSeekerFOV: this.toggleSeekerFov ? this.toggleSeekerFov.checked : false
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (err) {
@@ -106,12 +110,18 @@ export class Controls {
       }
 
       // 6. Aerodynamic (q-dependent) G-Limit
-      if (typeof settings.aeroLimit === 'boolean') {
+      if (typeof settings.aeroLimit === 'boolean' && this.toggleAeroLimit) {
         this.toggleAeroLimit.checked = settings.aeroLimit;
         if (this.callbacks.onAeroLimitChange) this.callbacks.onAeroLimitChange(settings.aeroLimit);
       }
 
-      // 7. Camera Mode
+      // 7. LOBL Mode (Lock-On Before Launch)
+      if (typeof settings.loblMode === 'boolean' && this.toggleLobl) {
+        this.toggleLobl.checked = settings.loblMode;
+        if (this.callbacks.onLOBLChange) this.callbacks.onLOBLChange(settings.loblMode);
+      }
+
+      // 8. Camera Mode
       if (settings.cameraMode && this.cameraSelect) {
         this.cameraSelect.value = settings.cameraMode;
         if (this.cameraHint) {
@@ -120,11 +130,16 @@ export class Controls {
         if (this.callbacks.onCameraChange) this.callbacks.onCameraChange(settings.cameraMode);
       }
 
-      // 8. Visual Overlays
+      // 9. Visual Overlays
       if (typeof settings.showLOS === 'boolean') this.toggleLos.checked = settings.showLOS;
       if (typeof settings.showAccel === 'boolean') this.toggleAccel.checked = settings.showAccel;
       if (typeof settings.showVel === 'boolean') this.toggleVel.checked = settings.showVel;
       if (typeof settings.showTrails === 'boolean') this.toggleTrails.checked = settings.showTrails;
+      if (typeof settings.showSeekerFOV === 'boolean' && this.toggleSeekerFov) {
+        this.toggleSeekerFov.checked = settings.showSeekerFOV;
+      } else if (this.toggleSeekerFov) {
+        this.toggleSeekerFov.checked = false;
+      }
     } catch (err) {
       console.warn('Failed to load settings from localStorage:', err);
     }
@@ -213,8 +228,15 @@ export class Controls {
       if (this.callbacks.onAeroLimitChange) this.callbacks.onAeroLimitChange(e.target.checked);
     });
 
+    if (this.toggleLobl) {
+      this.toggleLobl.addEventListener('change', (e) => {
+        this.saveSettings();
+        if (this.callbacks.onLOBLChange) this.callbacks.onLOBLChange(e.target.checked);
+      });
+    }
+
     // Overlay checkboxes
-    [this.toggleLos, this.toggleAccel, this.toggleVel, this.toggleTrails].forEach((chk) => {
+    [this.toggleLos, this.toggleAccel, this.toggleVel, this.toggleTrails, this.toggleSeekerFov].forEach((chk) => {
       if (chk) {
         chk.addEventListener('change', () => {
           this.saveSettings();
@@ -223,12 +245,29 @@ export class Controls {
     });
   }
 
+  updateLaunchButton(isLaunched, telemetry) {
+    if (isLaunched) {
+      this.btnLaunch.textContent = '🚀 In Flight';
+      this.btnLaunch.classList.remove('btn-no-lock');
+    } else {
+      const isLoblBlocked = telemetry && telemetry.loblEnabled && !telemetry.inSeekerFOV;
+      if (isLoblBlocked) {
+        this.btnLaunch.textContent = '🔒 No Lock (Out of FOV)';
+        this.btnLaunch.classList.add('btn-no-lock');
+      } else {
+        this.btnLaunch.textContent = '🚀 Launch';
+        this.btnLaunch.classList.remove('btn-no-lock');
+      }
+    }
+  }
+
   getOverlayConfig() {
     return {
       showLOS: this.toggleLos.checked,
       showAccel: this.toggleAccel.checked,
       showVel: this.toggleVel.checked,
-      showTrails: this.toggleTrails.checked
+      showTrails: this.toggleTrails.checked,
+      showSeekerFOV: this.toggleSeekerFov ? this.toggleSeekerFov.checked : false
     };
   }
 }

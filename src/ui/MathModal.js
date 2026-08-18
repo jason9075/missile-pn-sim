@@ -87,6 +87,11 @@ export class MathModal {
             $$\\theta_{los} = \\arcsin\\left(\\frac{r_y}{R}\\right) \\in [-90^\\circ, +90^\\circ]$$
             Represents the vertical elevation angle of the target above or below the horizontal ground plane.
           </li>
+          <li>
+            <strong>Seeker Look Angle (離軸角 / Gimbal Angle $\\eta$):</strong>
+            $$\\eta = \\arccos(\\mathbf{u}_m \\cdot \\mathbf{u}_{los}) \\in [0^\\circ, 180^\\circ]$$
+            The angular deviation between missile heading ($\\mathbf{u}_m$) and target LOS ($\\mathbf{u}_{los}$). The target is tracked within the seeker field of view (FOV) cone when $\\eta \\le \\theta_{\\text{FOV}}$ (e.g. $40^\\circ$).
+          </li>
         </ul>
         <p><em>*Note on terminology:</em> While body attitude uses body-fixed Euler angles ($\text{Yaw}, \\text{Pitch}, \\text{Roll}$) to describe where the missile's nose points, LOS $\\text{Azimuth}$ and $\\text{Elevation}$ describe where the target is located in space relative to the missile seeker.</p>
         
@@ -464,6 +469,11 @@ export class MathModal {
             <strong>俯仰角（Elevation / 垂直仰角 Pitch $\\theta_{los}$）：</strong>
             $$\\theta_{los} = \\arcsin\\left(\\frac{r_y}{R}\\right) \\in [-90^\\circ, +90^\\circ]$$
             表示目標高出海平面（水平面）的垂直向上仰角（正值為抬頭仰角，負值為俯角）。
+          </li>
+          <li>
+            <strong>尋標頭離軸角（Seeker Look Angle / 萬向架角 $\\eta$）：</strong>
+            $$\\eta = \\arccos(\\mathbf{u}_m \\cdot \\mathbf{u}_{los}) \\in [0^\\circ, 180^\\circ]$$
+            描述飛彈航向（$\\mathbf{u}_m$）與目標視線（$\\mathbf{u}_{los}$）之間的夾角。當 $\\eta \\le \\theta_{\\text{FOV}}$（例如 $40^\\circ$）時，目標位於尋標頭可視範圍錐（FOV Cone）內並被鎖定追蹤。
           </li>
         </ul>
         <p><em>*概念辨析：</em> 機體姿態角（$\\text{Yaw}, \\text{Pitch}, \\text{Roll}$）描述的是飛彈「自身機頭」朝向哪裡；而視線方位角與俯仰角（$\\text{Azimuth}, \\text{Elevation}$）描述的是「尋標頭視線」指向空間中目標的幾何角度。</p>

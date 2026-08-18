@@ -32,6 +32,7 @@ export class PNController {
     this.N = options.N !== undefined ? options.N : 4.0;
     this.maxAccelG = options.maxAccelG !== undefined ? options.maxAccelG : 30.0; // structural limit
     this.aeroLimitEnabled = options.aeroLimitEnabled === true;
+    this.loblEnabled = options.loblEnabled !== undefined ? options.loblEnabled : true; // Lock-On Before Launch (LOBL)
   }
 
   setNavigationGain(N) {
@@ -46,6 +47,11 @@ export class PNController {
   /** Enables the dynamic-pressure dependent aerodynamic G limit. */
   setAeroLimitEnabled(enabled) {
     this.aeroLimitEnabled = enabled;
+  }
+
+  /** Enables or disables Lock-On Before Launch (LOBL) seeker FOV constraint. */
+  setLOBLEnabled(enabled) {
+    this.loblEnabled = enabled;
   }
 
   /**
@@ -93,24 +99,32 @@ export class PNController {
     const omegaLos = VectorMath.computeLOSRate(losVector, relVel);
     const losRateMagnitude = omegaLos.length();
 
-    // 5. Raw Acceleration Command (a_c)
-    const cmdAccel = VectorMath.computeTPNAccelCommand(this.N, Vc, omegaLos, missileVel);
+    // 5. Seeker Look Angle & LOBL Tracking Gate
+    const missileSpeed = missileVel.length();
+    const u_m = missileSpeed > 1e-5 ? missileVel.clone().normalize() : new THREE.Vector3(0, 0, -1);
+    const lookAngle = VectorMath.computeLookAngle(missileVel, losVector);
+    const seekerFovHalfAngle = 40.0; // degrees (±40° seeker gimbal limit)
+    const inSeekerFOV = lookAngle <= seekerFovHalfAngle;
+    const isLocked = !this.loblEnabled || inSeekerFOV;
+
+    // 6. Raw Acceleration Command (a_c)
+    // Under LOBL mode, if target is outside seeker FOV, the seeker has no track and commands zero guidance
+    const rawCmdAccel = VectorMath.computeTPNAccelCommand(this.N, Vc, omegaLos, missileVel);
+    const cmdAccel = isLocked ? rawCmdAccel : new THREE.Vector3(0, 0, 0);
     const cmdAccelMag = cmdAccel.length();
     const cmdAccelG = cmdAccelMag / G0;
 
     // Split the command into the rudder (yaw) and elevator (pitch) fin channels
     const cmdAxes = VectorMath.decomposeBodyAxes(cmdAccel, missileVel);
 
-    // 6. Apply the flight-condition dependent saturation limit (a_m)
-    const missileSpeed = missileVel.length();
-    const u_m = missileSpeed > 1e-5 ? missileVel.clone().normalize() : new THREE.Vector3(0, 0, 0);
+    // 7. Apply the flight-condition dependent saturation limit (a_m)
     const maxAccelG = this.effectiveMaxAccelG(missilePos.y, missileSpeed);
     const maxAccelMag = maxAccelG * G0;
     const appliedAccel = cmdAccel.clone().clampLength(0, maxAccelMag);
     const appliedAccelMag = appliedAccel.length();
-    const isSaturated = cmdAccelMag > maxAccelMag + 1e-6;
+    const isSaturated = isLocked && (cmdAccelMag > maxAccelMag + 1e-6);
 
-    // 7. LOS Angles
+    // 8. LOS Angles
     const angles = VectorMath.getAzimuthElevation(losVector);
 
     return {
@@ -138,7 +152,12 @@ export class PNController {
       isSaturated,
       dynamicPressure: 0.5 * airDensity(missilePos.y) * missileSpeed ** 2,
       losAzimuth: angles.azimuth,
-      losElevation: angles.elevation
+      losElevation: angles.elevation,
+      lookAngle,
+      inSeekerFOV,
+      seekerFovHalfAngle,
+      loblEnabled: this.loblEnabled,
+      isLocked
     };
   }
 }

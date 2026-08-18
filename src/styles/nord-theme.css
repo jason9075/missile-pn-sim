@@ -125,6 +125,18 @@ canvas {
   box-shadow: 0 0 12px rgba(136, 192, 208, 0.4);
 }
 
+.btn.btn-no-lock {
+  background: rgba(46, 52, 64, 0.9) !important;
+  border-color: var(--nord12) !important;
+  color: var(--nord12) !important;
+  opacity: 0.9;
+}
+
+.btn.btn-no-lock:hover {
+  background: rgba(59, 66, 82, 0.95) !important;
+  box-shadow: 0 0 10px rgba(208, 135, 112, 0.35);
+}
+
 .toolbar-divider {
   width: 1px;
   height: 1.5rem;
@@ -282,7 +294,9 @@ canvas {
 }
 
 .status-standby { background: var(--nord3); color: var(--nord6); }
+.status-no-lock { background: var(--nord12); color: #ffffff; }
 .status-intercepting { background: var(--nord10); color: #ffffff; animation: pulse 1.5s infinite; }
+.status-lost-lock { background: var(--nord11); color: #ffffff; animation: pulse 0.8s infinite; }
 .status-hit { background: var(--nord14); color: var(--nord0); }
 .status-miss { background: var(--nord11); color: #ffffff; }
 
@@ -318,6 +332,12 @@ canvas {
 /* Aerodynamic limit has eroded the available G below the structural ceiling */
 .hud-value.is-degraded {
   color: var(--nord13);
+}
+
+/* Target is outside the missile seeker's field of view / gimbal limit */
+.hud-value.is-out-of-fov {
+  color: var(--nord12);
+  text-shadow: 0 0 8px rgba(208, 135, 112, 0.4);
 }
 
 /* Transverse-plane direction gauge for the guidance command */

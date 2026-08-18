@@ -9,6 +9,7 @@ export class TelemetryPanel {
     this.elMissileState = document.getElementById('tel-missile-state');
     this.elTargetState = document.getElementById('tel-target-state');
     this.elLosAngles = document.getElementById('tel-los-angles');
+    this.elLookAngle = document.getElementById('tel-look-angle');
     this.elLosRate = document.getElementById('tel-los-rate');
     this.elCmdAccel = document.getElementById('tel-cmd-accel');
     this.elCmdAxes = document.getElementById('tel-cmd-axes');
@@ -18,21 +19,42 @@ export class TelemetryPanel {
     this.elAppliedAccel = document.getElementById('tel-applied-accel');
     this.elGLimit = document.getElementById('tel-g-limit');
     this.elStatus = document.getElementById('hud-status');
+    this._warningTimeout = null;
+  }
+
+  flashWarning(message = 'LOBL INHIBITED (NO LOCK)') {
+    if (!this.elStatus) return;
+    this.elStatus.textContent = message;
+    this.elStatus.className = 'hud-badge status-no-lock';
+    if (this._warningTimeout) clearTimeout(this._warningTimeout);
+    this._warningTimeout = setTimeout(() => {
+      this._warningTimeout = null;
+    }, 2200);
   }
 
   update(missile, target, telemetry) {
-    if (!missile.isLaunched) {
-      this.elStatus.textContent = 'STANDBY';
-      this.elStatus.className = 'hud-badge status-standby';
-    } else if (missile.isHit) {
-      this.elStatus.textContent = 'TARGET INTERCEPTED (HIT)';
-      this.elStatus.className = 'hud-badge status-hit';
-    } else if (missile.isMissed) {
-      this.elStatus.textContent = 'TARGET MISSED';
-      this.elStatus.className = 'hud-badge status-miss';
-    } else {
-      this.elStatus.textContent = 'INTERCEPTING';
-      this.elStatus.className = 'hud-badge status-intercepting';
+    if (!this._warningTimeout) {
+      if (!missile.isLaunched) {
+        if (telemetry.loblEnabled && !telemetry.inSeekerFOV) {
+          this.elStatus.textContent = 'STANDBY (NO LOCK)';
+          this.elStatus.className = 'hud-badge status-no-lock';
+        } else {
+          this.elStatus.textContent = 'STANDBY (LOCKED)';
+          this.elStatus.className = 'hud-badge status-standby';
+        }
+      } else if (missile.isHit) {
+        this.elStatus.textContent = 'TARGET INTERCEPTED (HIT)';
+        this.elStatus.className = 'hud-badge status-hit';
+      } else if (missile.isMissed) {
+        this.elStatus.textContent = 'TARGET MISSED';
+        this.elStatus.className = 'hud-badge status-miss';
+      } else if (telemetry.loblEnabled && !telemetry.inSeekerFOV) {
+        this.elStatus.textContent = 'LOST LOCK (COASTING)';
+        this.elStatus.className = 'hud-badge status-lost-lock';
+      } else {
+        this.elStatus.textContent = 'INTERCEPTING (LOCKED)';
+        this.elStatus.className = 'hud-badge status-intercepting';
+      }
     }
 
     this.elTime.textContent = `${missile.flightTime.toFixed(2)} s`;
@@ -48,6 +70,14 @@ export class TelemetryPanel {
     this.elTargetState.textContent = `${tSpeed} m/s | ${tAlt} m`;
 
     this.elLosAngles.textContent = `${telemetry.losAzimuth.toFixed(1)}° | ${telemetry.losElevation.toFixed(1)}°`;
+
+    if (this.elLookAngle && typeof telemetry.lookAngle === 'number') {
+      const angleStr = telemetry.lookAngle.toFixed(1);
+      const statusStr = telemetry.inSeekerFOV ? 'LOCKED' : 'NO LOCK';
+      this.elLookAngle.textContent = `${angleStr}° [${statusStr}]`;
+      this.elLookAngle.classList.toggle('is-out-of-fov', !telemetry.inSeekerFOV);
+    }
+
     this.elLosRate.textContent = `${telemetry.losRateMagnitude.toFixed(4)} rad/s`;
 
     const cmdG = telemetry.cmdAccelG.toFixed(1);

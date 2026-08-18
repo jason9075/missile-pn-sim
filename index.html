@@ -57,12 +57,16 @@
       </div>
       <hr class="panel-divider" />
       <div class="control-group">
-        <span class="control-group-title">Airframe Limits</span>
+        <span class="control-group-title">Airframe & Guidance Limits</span>
         <label for="g-limit">Structural G-Limit (a<sub>max</sub>): <span id="val-g-limit">30</span> G</label>
         <input type="range" id="g-limit" min="5" max="60" step="1" value="30" />
         <label class="checkbox-label" title="Scale the achievable G with dynamic pressure q = ½ρV², so low speed or high altitude degrades manoeuvrability">
           <input type="checkbox" id="toggle-aero-limit" />
           <span>Aero G-Limit (q-dependent)</span>
+        </label>
+        <label class="checkbox-label" title="Lock-On Before Launch: Seeker must acquire target in FOV (±40°) before launch; loss of FOV in flight drops guidance command">
+          <input type="checkbox" id="toggle-lobl" checked />
+          <span>LOBL Mode (Lock-On Before Launch)</span>
         </label>
       </div>
       <hr class="panel-divider" />
@@ -83,6 +87,10 @@
         <label class="checkbox-label">
           <input type="checkbox" id="toggle-trails" checked />
           <span>Trajectory Ribbon Trails</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="toggle-seeker-fov" />
+          <span>Seeker Field of View (FOV)</span>
         </label>
       </div>
     </div>
@@ -118,6 +126,10 @@
       <div class="hud-item">
         <span class="hud-label">LOS Azimuth / Elev</span>
         <span id="tel-los-angles" class="hud-value">0.0° | 0.0°</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Seeker Look Angle (&eta;)</span>
+        <span id="tel-look-angle" class="hud-value">0.0° [IN FOV]</span>
       </div>
       <div class="hud-item">
         <span class="hud-label">LOS Rate (|ω<sub>los</sub>|)</span>

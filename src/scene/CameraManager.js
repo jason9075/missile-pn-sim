@@ -48,6 +48,8 @@ export class CameraManager {
       distance: 35.0
     };
 
+    this.needsSnap = false;
+
     this.bindEvents();
     this.resetCamera();
   }
@@ -69,13 +71,16 @@ export class CameraManager {
     this.targetOrbit.distance = 35.0;
   }
 
-  // Alias for backward compatibility
+  // Simulation reset: preserves user-adjusted angles & positions across all modes
   resetOrbit() {
-    this.resetCamera();
+    this.velocity.set(0, 0, 0);
+    this.targetVelocity.set(0, 0, 0);
+    this.needsSnap = true;
   }
 
   setMode(mode) {
     this.mode = (mode === 'orbit') ? 'free' : mode;
+    this.needsSnap = true;
     
     if (this.mode === 'free') {
       // Sync euler angles seamlessly from current camera quaternion
@@ -339,7 +344,11 @@ export class CameraManager {
       const targetCamPos = missilePhysics.position.clone().add(offset);
       const lookTarget = missilePhysics.position.clone();
 
-      this.camera.position.lerp(targetCamPos, 0.28);
+      if (this.needsSnap) {
+        this.camera.position.copy(targetCamPos);
+      } else {
+        this.camera.position.lerp(targetCamPos, 0.28);
+      }
       this.camera.lookAt(lookTarget);
     } else if (this.mode === 'target') {
       // Orbiting chase camera around target drone
@@ -364,8 +373,14 @@ export class CameraManager {
       const targetCamPos = targetPhysics.position.clone().add(offset);
       const lookTarget = targetPhysics.position.clone();
 
-      this.camera.position.lerp(targetCamPos, 0.28);
+      if (this.needsSnap) {
+        this.camera.position.copy(targetCamPos);
+      } else {
+        this.camera.position.lerp(targetCamPos, 0.28);
+      }
       this.camera.lookAt(lookTarget);
     }
+
+    this.needsSnap = false;
   }
 }
